@@ -1,0 +1,13 @@
+name = "JPerplex"
+uuid = "47cd544e-370f-4714-8b6c-e3a83d4a5076"
+authors = ["Sabastien Dyer <scdyer@uwaterloo.ca> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

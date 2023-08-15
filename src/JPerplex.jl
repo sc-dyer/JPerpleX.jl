@@ -1,6 +1,24 @@
+
+"""
+This is the main module for a more "advanced" Perple_X julia wrapper. The advantages of this
+library over a more "basic" wrapper is that it calls the compiled fortran functions in perplexwrap.f
+directly and *shouldn't* require repeated file i/o or command piping.
+
+# Exports
+$(EXPORTS)
+"""
 module JPerplex
-using PetroBase
-using Random
+export 
+    initMeemum,
+    minimizePoint,
+    Assemblage,
+    PerplexGrid,
+    getPseudosection
+using
+    DocStringExtensions,
+    Reexport
+
+@reexport using PetroBase
 # Write your package code here.
 
 #Constants from PerpleX, these MUST match the equivalent values in perplex_parameters.h
@@ -34,7 +52,7 @@ function initMeemum(datFile::String)
     compositions = fill(0.0,3,K5)
     componentMass = fill(0.0,K0)
     componentNames = rpad("",K5*maxCompNameL)#The array of strings fed from fortran is provided as just a string that will need to be parsed
-    ccall((:__perplexwrap_MOD_initmeemum,"./perplexwrap.so"),
+    ccall((:__perplexwrap_MOD_initmeemum,joinpath(@__DIR__,"perplexwrap.so")),
         Cvoid,(Cstring,Ref{Int32}, Cstring, Ref{Float64},Ref{Float64}), 
         fileName, sizeof(fileName),componentNames, compositions, componentMass)
     
@@ -98,7 +116,7 @@ function minimizePoint(comps::Array{Component},pres::Real,temp::Real; suppressWa
     phaseComps = fill(0.0,K0,K5)
     sysProps = fill(0.0,I8)
     
-    ccall((:__perplexwrap_MOD_minimizepoint,"./perplexwrap.so"),
+    ccall((:__perplexwrap_MOD_minimizepoint,joinpath(@__DIR__,"perplexwrap.so")),
         Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64}),
         compoString,sysCompo,pres,temp,suppressWarn,cPotentials,phaseNames,phaseProps,phaseComps,sysProps)
 
@@ -199,7 +217,7 @@ function getPseudosection(datFile::String)
     xVarName = rpad("",varNameL)
     yVarName = rpad("",varNameL)
 
-    ccall((:__perplexwrap_MOD_pseudosection,"./perplexwrap.so"),
+    ccall((:__perplexwrap_MOD_pseudosection,joinpath(@__DIR__,"perplexwrap.so")),
         Cvoid,(Cstring,Ref{Int32},Ref{Int32},Ref{Int32},Ref{Int32},Cstring,Cstring,Ref{Float64},Ref{Float64},
         Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Cstring,Cstring),
         fileName,sizeof(fileName),grid,gridToAssem,assemToPhase,purePhases,solPhases,

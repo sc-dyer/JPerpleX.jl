@@ -67,8 +67,8 @@ function initMeemum(datFile::String)
                 
                 if row[i] > 0
                     #Parse the names assuming constant length of each component name
-                    compName = rstrip(componentNames[(i-1)*maxCompNameL+1:i*maxCompNameL])
-                    thisComponent = Component(compName,componentMass[i],row[i],0)
+                    compName = String(rstrip(componentNames[(i-1)*maxCompNameL+1:i*maxCompNameL]))
+                    thisComponent = Component(compName,componentMass[i],row[i])
                     push!(thisCol,thisComponent)
                     
                 end
@@ -93,7 +93,7 @@ end
 This is function runs meemum for the provided composition (comps) at the given pres and temp in bars and degree C. 
     This will return a list of stable phases and their properties as well as the bulk system properties
 """
-function minimizePoint(comps::Array{Component},pres::Real,temp::Real; suppressWarn::Bool = false)
+function minimizePoint(comps::Array{Component},temp::Real,pres::Real; suppressWarn::Bool = false)
 
     #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
     #INPUT variables
@@ -105,7 +105,7 @@ function minimizePoint(comps::Array{Component},pres::Real,temp::Real; suppressWa
         compoString *= rpad(name,maxCompNameL)
     end
     compoString = rpad(compoString,K5*maxCompNameL)
-    sysCompo = vcat(mol.(comps),fill(0.0,K5-length(comps)))
+    sysCompo = vcat(conc.(comps),fill(0.0,K5-length(comps)))
     
     #OUTPUT variables
     #Any anticipated output from Fortran has to be put into an array of the same shape
@@ -162,22 +162,23 @@ function minimizePoint(comps::Array{Component},pres::Real,temp::Real; suppressWa
         end
     end
 
-    system = SystemProperties(compo = newComps,
-                            mol = sysProps[16],
-                            vol = sysProps[16]*sysProps[1],
-                            mass = sysProps[16]*sysProps[17],
-                            ρ = sysProps[10],
-                            mMass = sysProps[17],
-                            G = sysProps[11],
-                            H = sysProps[2],
-                            S = sysProps[15],
-                            Cp = sysProps[12],
-                            Vmol = sysProps[1],
-                            Cp_Cv = sysProps[28],
-                            α = sysProps[13],
-                            β = sysProps[14])
+    system = PetroSystem(compo = newComps,
+                        phases = phaseArray,
+                        mol = sysProps[16],
+                        vol = sysProps[16]*sysProps[1],
+                        mass = sysProps[16]*sysProps[17],
+                        ρ = sysProps[10],
+                        mMass = sysProps[17],
+                        G = sysProps[11],
+                        H = sysProps[2],
+                        S = sysProps[15],
+                        Cp = sysProps[12],
+                        Vmol = sysProps[1],
+                        Cp_Cv = sysProps[28],
+                        α = sysProps[13],
+                        β = sysProps[14])
     #return compoNames,cPotentials,phaseNames,phaseProps,phaseComps,sysProps
-    return phaseArray, system
+    return system
 end
 
 

@@ -13,10 +13,16 @@ export
     minimizePoint,
     Assemblage,
     PerplexGrid,
-    getPseudosection
+    getPseudosection,
+    listUniqueAssemblages,
+    getX,
+    getY,
+    getKey,
+    filterGrid
 using
     DocStringExtensions,
-    Reexport
+    Reexport,
+    CairoMakie
 
 @reexport using PetroBase
 # Write your package code here.
@@ -189,6 +195,40 @@ struct Assemblage
     key::Int64
 end
 
+function getX(asm::Assemblage)
+    return asm.x
+end
+
+function getY(asm::Assemblage)
+    return asm.y
+end
+
+function getKey(asm::Assemblage)
+    return asm.key
+end
+
+function listUniqueAssemblages(asms::Array{Assemblage})
+
+    uniqueAsms = Array{Assemblage}([])
+    
+
+    for asm in asms
+        isPresent = false
+        for uAsm in uniqueAsms
+            if asm.key == uAsm.key
+                isPresent = true
+            end
+        end
+
+        if !isPresent
+            push!(uniqueAsms,asm)#x and y values are arbitrary here
+        end
+
+    end
+
+    return sort(uniqueAsms,by = getKey)
+
+end
 struct PerplexGrid
     assemblages::Array{Assemblage}
     xAx::String
@@ -257,7 +297,7 @@ function getPseudosection(datFile::String)
         phaseName = rstrip(solPhases[firstIndex:lastIndex])
         count += 1
     end
-    println(purePhaseArr[60:150])
+    # println(purePhaseArr[60:150])
     griddedAssemblage = Array{Assemblage}([])
     #Decoding the grid and assigning assemblages
     for ix in CartesianIndices(grid)
@@ -288,6 +328,48 @@ function getPseudosection(datFile::String)
     end
     
     return PerplexGrid(griddedAssemblage,rstrip(xVarName),rstrip(yVarName))
+end
+
+function filterGrid(grid::PerplexGrid,filterKey::Integer)
+
+    keys = getKey.(grid.assemblages)
+    
+    for i in range(1,lastindex(keys))
+
+        if keys[i] != filterKey
+            keys[i] = 0
+        else
+            keys[i] = 1
+        end
+
+    end
+
+    return keys
+
+end
+
+function plotPseudosection(pseudo::PerplexGrid;tempInC = false)
+    #Will modify the axis provided to make a getPseudosection
+    #User will define design elements
+    
+    #For now do heatmap
+    x = getX.(pseudo.assemblages)
+    y = getY.(pseudo.assemblages)
+    xAx = pseudo.xAx
+    yAx = pseudo.yAx
+    if occursin("T (K)", pseudo.xAx) && tempInC
+        x = x.-273.15
+        xAx = "T (°C)"
+    end
+    if occursin("T (K)",pseudo.yAx) && tempInC
+        y = y.-273.15
+        yAx = "T (°C)"
+    end
+    ax = heatmap(x,y,getKey.(pseudo.assemblages),colormap = :glasbey_bw_minc_20_minl_30_n256)
+    ax.xlabel = xAx
+    ax.ylabel = yAx
+
+    return ax
 end
 
 end

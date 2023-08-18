@@ -57,5 +57,5 @@ jobs:
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
             using JPerplex
-            DocMeta.setdocmeta!(JPerplex, :DocTestSetup, :(using JPerplex); recursive=true)
-            doctest(JPerplex)'
+            DocMeta.setdocmeta!(JPerpleX, :DocTestSetup, :(using JPerpleX); recursive=true)
+            doctest(JPerpleX)'

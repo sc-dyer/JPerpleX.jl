@@ -7,7 +7,7 @@ directly and *shouldn't* require repeated file i/o or command piping.
 # Exports
 $(EXPORTS)
 """
-module JPerplex
+module JPerpleX
 export 
     initMeemum,
     minimizePoint,
@@ -18,11 +18,15 @@ export
     getX,
     getY,
     getKey,
-    filterGrid
+    filterGrid,
+    filterKeyArray,
+    plotPseudosection!
 using
     DocStringExtensions,
     Reexport,
-    CairoMakie
+    CairoMakie,
+    Statistics,
+    Makie.Colors
 
 @reexport using PetroBase
 # Write your package code here.
@@ -235,7 +239,7 @@ struct PerplexGrid
     yAx::String
 end
 
-function getPseudosection(datFile::String)
+function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = false)
 
     #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
     #Start by initializing all the necessary variables
@@ -273,6 +277,34 @@ function getPseudosection(datFile::String)
     yMax = yMax[1]
     yInc = yInc[1]
 
+    xVarName = rstrip(xVarName)
+    yVarName = rstrip(yVarName)
+    
+    if occursin("T(K)", xVarName) && tempInC
+        xMin = xMin-273.15
+        xMax = xMax-273.15
+        xVarName  = "T (°C)"
+    end
+
+    if occursin("T(K)",yVarName) && tempInC
+        yMin = yMin-273.15
+        yMax = yMax-273.15
+        yVarName  = "T (°C)"
+    end
+
+    if occursin("P(bar)", xVarName) && pInKBar
+        xMin = xMin/1000
+        xMax = xMax/1000
+        xInc = xInc/1000
+        xVarName  = "P (kBar)"
+    end
+
+    if occursin("P(bar)",yVarName) && pInKBar
+        yMin = yMin/1000
+        yMax = yMax/1000
+        yInc = yInc/1000
+        yVarName  = "P (kBar)"
+    end
     #Convert purePhases to list of strings
     phaseName = rstrip(purePhases[1:purePhaseNameL])
     # println(purePhases[1:100])
@@ -330,9 +362,10 @@ function getPseudosection(datFile::String)
     return PerplexGrid(griddedAssemblage,rstrip(xVarName),rstrip(yVarName))
 end
 
-function filterGrid(grid::PerplexGrid,filterKey::Integer)
-
-    keys = getKey.(grid.assemblages)
+function filterKeyArray(asms::Array{Assemblage},filterKey::Integer)
+#Returns an array of 1s and 0s where 1 is in the index in asms that has a key that matches filterKey
+#used for plotting
+    keys = getKey.(asms)
     
     for i in range(1,lastindex(keys))
 
@@ -348,7 +381,22 @@ function filterGrid(grid::PerplexGrid,filterKey::Integer)
 
 end
 
-function plotPseudosection(pseudo::PerplexGrid;tempInC = false)
+function filterGrid(pGrid::PerplexGrid,filterKey::Integer)
+#Returns a list of assemblages with a key matching filterKey
+    asms = Array{Assemblage}([])
+
+    for assem in pGrid.assemblages
+        if assem.key == filterKey
+            push!(asms,assem)
+        end
+    end
+
+    return asms
+
+end
+
+
+function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
     #Will modify the axis provided to make a getPseudosection
     #User will define design elements
     
@@ -357,19 +405,42 @@ function plotPseudosection(pseudo::PerplexGrid;tempInC = false)
     y = getY.(pseudo.assemblages)
     xAx = pseudo.xAx
     yAx = pseudo.yAx
-    if occursin("T (K)", pseudo.xAx) && tempInC
-        x = x.-273.15
-        xAx = "T (°C)"
+
+    uniqueAsms = listUniqueAssemblages(pseudo.assemblages)
+    maxPhaseVar = 0
+    minPhaseVar = 100
+    for asm in uniqueAsms
+        if length(asm.phases) >maxPhaseVar
+            maxPhaseVar = length(asm.phases)
+        end
+        if length(asm.phases) <minPhaseVar
+            minPhaseVar = length(asm.phases)
+        end
+
     end
-    if occursin("T (K)",pseudo.yAx) && tempInC
-        y = y.-273.15
-        yAx = "T (°C)"
+
+
+    for i in range(1,lastindex(uniqueAsms))
+        
+        colorVal = 1-(1-(length(uniqueAsms[i].phases)-minPhaseVar)/(maxPhaseV-minPhaseV))*0.8
+        contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
+        
     end
-    ax = heatmap(x,y,getKey.(pseudo.assemblages),colormap = :glasbey_bw_minc_20_minl_30_n256)
+
+    for i in range(1,lastindex(uniqueAsms))
+        contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
+        iGrid = filterGrid(pseudo,i)
+        scatter!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)), marker = :circle, strokecolor = :black,strokewidth = 1,color = :transparent)
+        text!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)),text = string(i))
+    end
+
     ax.xlabel = xAx
     ax.ylabel = yAx
-
-    return ax
+    xMin = minimum(getX.(pseudo.assemblages))
+    yMin = minimum(getY.(pseudo.assemblages))
+    xMax = maximum(getX.(pseudo.assemblages))
+    yMax = maximum(getY.(pseudo.assemblages))
+    ax.limits = (xMin,xMax,yMin,yMax)
 end
 
 end

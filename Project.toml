@@ -6,8 +6,10 @@ version = "1.0.0-DEV"
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PetroBase = "b72d3798-c150-44c4-b6d4-c983c975f217"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 julia = "1"

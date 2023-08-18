@@ -1,5 +1,5 @@
 #Tests adapted from main Perple_X repo
-using JPerplex
+using JPerpleX
 using Test
 
 @testset "JPerplex.jl" begin

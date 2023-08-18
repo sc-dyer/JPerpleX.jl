@@ -1,16 +1,16 @@
-using JPerplex
+using JPerpleX
 using Documenter
 
-DocMeta.setdocmeta!(JPerplex, :DocTestSetup, :(using JPerplex); recursive=true)
+DocMeta.setdocmeta!(JPerpleX, :DocTestSetup, :(using JPerpleX); recursive=true)
 
 makedocs(;
-    modules=[JPerplex],
+    modules=[JPerpleX],
     authors="Sabastien Dyer <scdyer@uwaterloo.ca> and contributors",
-    repo="https://github.com/sc-dyer/JPerplex.jl/blob/{commit}{path}#{line}",
-    sitename="JPerplex.jl",
+    repo="https://github.com/sc-dyer/JPerpleX.jl/blob/{commit}{path}#{line}",
+    sitename="JPerpleX.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://sc-dyer.github.io/JPerplex.jl",
+        canonical="https://sc-dyer.github.io/JPerpleX.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -20,6 +20,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/sc-dyer/JPerplex.jl",
+    repo="github.com/sc-dyer/JPerpleX.jl",
     devbranch="main",
 )

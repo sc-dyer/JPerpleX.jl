@@ -1,14 +1,14 @@
 ```@meta
-CurrentModule = JPerplex
+CurrentModule = JPerpleX
 ```
 
 # JPerplex
 
-Documentation for [JPerplex](https://github.com/sc-dyer/JPerplex.jl).
+Documentation for [JPerpleX](https://github.com/sc-dyer/JPerpleX.jl).
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [JPerplex]
+Modules = [JPerpleX]
 ```

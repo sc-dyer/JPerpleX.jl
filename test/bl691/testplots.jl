@@ -1,5 +1,5 @@
-using JPerplex
-# using CairoMakie
+using JPerpleX
+using CairoMakie
 # using Makie.Colors
 # using Statistics
 
@@ -27,7 +27,7 @@ ax = Axis(fig[1,1],
     ygridvisible = false
 )
 
-# pseudo = getPseudosection("bl691",tempInC=true)
+pseudo = getPseudosection("bl691",tempInC=true)
 # x = getX.(pseudo.assemblages)
 # y = getY.(pseudo.assemblages)
 # xAx = pseudo.xAx

@@ -48,10 +48,10 @@ const solPhaseAbbrL = 6
 const varNameL = 8
 
 """
-    initMeemum(datFile)
-Calls the initMeemum subroutine from perplexwrap.f and initialize meemum using the local datFile for the model parameters.
-This will return a matrix of Components providing the bulk rock composition (in mol), component name, and its molar mass.
-Each column in the matrix represents one set of compositions provided in the .dat file.
+$(TYPEDSIGNATURES)
+
+Calls the 'initMeemum' subroutine from 'perplexwrap.f' and initialize meemum using the local 'datFile' for the model parameters.
+This will return an array of 'Component' variables.
 """
 function initMeemum(datFile::String)
     #function wrapper for the initmeemum subroutine in perplexwrap.f
@@ -99,9 +99,11 @@ end
 
 
 """
-    minimizePoint(comps, pres, temp)
-This is function runs meemum for the provided composition (comps) at the given pres and temp in bars and degree C. 
-    This will return a list of stable phases and their properties as well as the bulk system properties
+$(TYPEDSIGNATURES)
+
+This is function runs the 'minimizePoint' function in 'perplexwrap.f '
+for the provided composition ('comps') at the given pressure ('pres') and temperature ('temp')  in bars and °C. 
+This will return a PetroSystem.
 """
 function minimizePoint(comps::Array{Component},temp::Real,pres::Real; suppressWarn::Bool = false)
 
@@ -191,26 +193,55 @@ function minimizePoint(comps::Array{Component},temp::Real,pres::Real; suppressWa
     return system
 end
 
-
+"""
+$(SIGNATURES)
+This is a simple type defined to keep track of the phases present at each x and y coordinate in a 'PerplexGrid'.
+The variables of the x and y axis will be defined in the 'PerplexGrid'
+$(TYPEDFIELDS)
+"""
 struct Assemblage
+    "List of phase names"
     phases::Array{String}
+    "X coordinate"
     x::Float64
+    "Y coordinate"
     y::Float64
+    "Integer key that corresponds to the assemblage"
     key::Int64
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Returns the 'x' of 'asm', useful for broadcasting
+"""
 function getX(asm::Assemblage)
     return asm.x
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Returns the 'y' of 'asm', useful for broadcasting
+"""
 function getY(asm::Assemblage)
     return asm.y
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Returns the 'key' of 'asm', useful for broadcasting
+"""
 function getKey(asm::Assemblage)
     return asm.key
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Returns an array of 'Assemblage' variables constructed from 'asms' where each item in the array has a unique key
+"""
 function listUniqueAssemblages(asms::Array{Assemblage})
 
     uniqueAsms = Array{Assemblage}([])
@@ -233,12 +264,30 @@ function listUniqueAssemblages(asms::Array{Assemblage})
     return sort(uniqueAsms,by = getKey)
 
 end
+
+"""
+$(SIGNATURES)
+This describes the computed grid output by vertex (currently only the assemblage). Where each element of 
+'assemblages' is a point on the grid.
+$(TYPEDFIELDS)
+"""
 struct PerplexGrid
+    "Entire collection of points from the computation"
     assemblages::Array{Assemblage}
+    "Variable name of the x-axis"
     xAx::String
+    "Variable name of the y-axis"
     yAx::String
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+This calls the 'pseudosection' function in 'perplexwrap.f. This will read the output of a 
+vertex calculation of the given 'datFile' and provide a 'PerplexGrid'. If 'tempInC' is set to 'true', 
+temperature variables will be converted to °C. If 'pInkBar' is set to 'true', pressure variables
+ will be converted to kBar.
+"""
 function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = false)
 
     #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
@@ -280,6 +329,7 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = fals
     xVarName = rstrip(xVarName)
     yVarName = rstrip(yVarName)
     
+    #This is the K to °C conversion
     if occursin("T(K)", xVarName) && tempInC
         xMin = xMin-273.15
         xMax = xMax-273.15
@@ -292,6 +342,7 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = fals
         yVarName  = "T (°C)"
     end
 
+    #bar to kbar conversion
     if occursin("P(bar)", xVarName) && pInKBar
         xMin = xMin/1000
         xMax = xMax/1000
@@ -307,7 +358,6 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = fals
     end
     #Convert purePhases to list of strings
     phaseName = rstrip(purePhases[1:purePhaseNameL])
-    # println(purePhases[1:100])
     purePhaseArr = Array{String}([])
     count = 1
     while length(phaseName) > 0 && count*purePhaseNameL < length(purePhases)
@@ -329,14 +379,16 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = fals
         phaseName = rstrip(solPhases[firstIndex:lastIndex])
         count += 1
     end
-    # println(purePhaseArr[60:150])
+
+
     griddedAssemblage = Array{Assemblage}([])
     #Decoding the grid and assigning assemblages
-    for ix in CartesianIndices(grid)
+    for ix in CartesianIndices(grid)#Best way to iterate through a matrix apparently?
+        #ix[1] is the x-axis, ix[2] is the y-axis and these are integer indices in grid
 
         if grid[ix[1],ix[2]] > 0
             
-            #Might be reversed, got to try and find out I guess
+            #This is the conversion from grid points to x-y points
             x = xMin + xInc*(ix[1]-1)
             y = yMin + yInc*(ix[2]-1)
             asmKey = gridToAssem[grid[ix[1],ix[2]]]#This tells us what the assemblage is
@@ -362,6 +414,13 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = fals
     return PerplexGrid(griddedAssemblage,rstrip(xVarName),rstrip(yVarName))
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+This is a function used for plotting. It will return a list of integers of the same length as 'asms'.
+Where each index corresponds to the same asm. These will have a value of 1 if 'asm[i]' is the same as
+the 'filterKey' and 0 if not.
+"""
 function filterKeyArray(asms::Array{Assemblage},filterKey::Integer)
 #Returns an array of 1s and 0s where 1 is in the index in asms that has a key that matches filterKey
 #used for plotting
@@ -381,6 +440,12 @@ function filterKeyArray(asms::Array{Assemblage},filterKey::Integer)
 
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+This will take 'pGrid' and return an array of all the 'Assemblage' variables in 'pGrid.assemblages' that match
+the 'filterKey'.
+"""
 function filterGrid(pGrid::PerplexGrid,filterKey::Integer)
 #Returns a list of assemblages with a key matching filterKey
     asms = Array{Assemblage}([])
@@ -395,17 +460,20 @@ function filterGrid(pGrid::PerplexGrid,filterKey::Integer)
 
 end
 
+"""
+$(TYPEDSIGNATURES)
 
+This will take 'ax' and plot the pseudosection defined by 'pseudo'. These will be plotted such that they 
+can still be edited with a vector graphics editor. The 'Axis' type is defined in the CairoMakie package, but 
+it might work with Plots? The user should be able to modify the formatting of 'ax' before and after calling 
+this function.
+"""
 function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
-    #Will modify the axis provided to make a getPseudosection
-    #User will define design elements
-    
-    #For now do heatmap
+   
     x = getX.(pseudo.assemblages)
     y = getY.(pseudo.assemblages)
-    xAx = pseudo.xAx
-    yAx = pseudo.yAx
 
+    #Here we figure out the assemblage variance used in determining the field colour
     uniqueAsms = listUniqueAssemblages(pseudo.assemblages)
     maxPhaseVar = 0
     minPhaseVar = 100
@@ -416,17 +484,17 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
         if length(asm.phases) <minPhaseVar
             minPhaseVar = length(asm.phases)
         end
-
     end
 
-
+    #This part plots a filled contour around each unique assemblage
+    #Ranges of the levels and colormaps are based on trial and error, do not change them
+    #They should be roughly halfway beetween grid points in a smoothed line
     for i in range(1,lastindex(uniqueAsms))
-        
-        colorVal = 1-(1-(length(uniqueAsms[i].phases)-minPhaseVar)/(maxPhaseV-minPhaseV))*0.8
+        colorVal = 1-(1-(length(uniqueAsms[i].phases)-minPhaseVar)/(maxPhaseVar-minPhaseVar))*0.8
         contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
-        
     end
 
+    #For added flair, we add outlines and labels to each assemblage
     for i in range(1,lastindex(uniqueAsms))
         contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
         iGrid = filterGrid(pseudo,i)
@@ -434,8 +502,8 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
         text!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)),text = string(i))
     end
 
-    ax.xlabel = xAx
-    ax.ylabel = yAx
+    ax.xlabel = pseudo.xAx
+    ax.ylabel = pseudo.yAx
     xMin = minimum(getX.(pseudo.assemblages))
     yMin = minimum(getY.(pseudo.assemblages))
     xMax = maximum(getX.(pseudo.assemblages))

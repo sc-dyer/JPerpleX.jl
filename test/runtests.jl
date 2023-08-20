@@ -23,6 +23,7 @@ using Test
         for elem in testCompo
             @test elem ≈ readCompo[findChem(readCompo,elem)]
         end
+        println("Init test done")
         T = 1050-273
         P = 4000
         calcSys = minimizePoint(readCompo, T, P)

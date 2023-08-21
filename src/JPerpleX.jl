@@ -1,7 +1,7 @@
 
 """
-This is the main module for a more "advanced" Perple_X julia wrapper. The advantages of this
-library over a more "basic" wrapper is that it calls the compiled fortran functions in perplexwrap.f
+This is the main module for a more "advanced" Perple_X julia wrapper. The advantages of this 
+library over a more "basic" wrapper is that it calls the compiled fortran functions in perplexwrap.f 
 directly and *shouldn't* require repeated file i/o or command piping.
 
 # Exports
@@ -20,7 +20,8 @@ export
     getKey,
     filterGrid,
     filterKeyArray,
-    plotPseudosection!
+    plotPseudosection!,
+    outputAssemblages
 using
     DocStringExtensions,
     Reexport,
@@ -50,7 +51,7 @@ const varNameL = 8
 """
 $(TYPEDSIGNATURES)
 
-Calls the 'initMeemum' subroutine from 'perplexwrap.f' and initialize meemum using the local 'datFile' for the model parameters.
+Calls the 'initMeemum' subroutine from 'perplexwrap.f' and initialize meemum using the local 'datFile' for the model parameters. 
 This will return an array of 'Component' variables.
 """
 function initMeemum(datFile::String)
@@ -101,7 +102,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-This is function runs the 'minimizePoint' function in 'perplexwrap.f '
+This is function runs the 'minimizePoint' function in 'perplexwrap.f ' 
 for the provided composition ('comps') at the given pressure ('pres') and temperature ('temp')  in bars and °C. 
 This will return a PetroSystem.
 """
@@ -195,7 +196,7 @@ end
 
 """
 $(SIGNATURES)
-This is a simple type defined to keep track of the phases present at each x and y coordinate in a 'PerplexGrid'.
+This is a simple type defined to keep track of the phases present at each x and y coordinate in a 'PerplexGrid'. 
 The variables of the x and y axis will be defined in the 'PerplexGrid'
 $(TYPEDFIELDS)
 """
@@ -285,8 +286,8 @@ $(TYPEDSIGNATURES)
 
 This calls the 'pseudosection' function in 'perplexwrap.f. This will read the output of a 
 vertex calculation of the given 'datFile' and provide a 'PerplexGrid'. If 'tempInC' is set to 'true', 
-temperature variables will be converted to °C. If 'pInkBar' is set to 'true', pressure variables
- will be converted to kBar.
+temperature variables will be converted to °C. If 'pInkBar' is set to 'true', pressure variables 
+will be converted to kBar.
 """
 function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = false)
 
@@ -417,8 +418,8 @@ end
 """
 $(TYPEDSIGNATURES)
 
-This is a function used for plotting. It will return a list of integers of the same length as 'asms'.
-Where each index corresponds to the same asm. These will have a value of 1 if 'asm[i]' is the same as
+This is a function used for plotting. It will return a list of integers of the same length as 'asms'. 
+Where each index corresponds to the same asm. These will have a value of 1 if 'asm[i]' is the same as 
 the 'filterKey' and 0 if not.
 """
 function filterKeyArray(asms::Array{Assemblage},filterKey::Integer)
@@ -443,7 +444,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-This will take 'pGrid' and return an array of all the 'Assemblage' variables in 'pGrid.assemblages' that match
+This will take 'pGrid' and return an array of all the 'Assemblage' variables in 'pGrid.assemblages' that match 
 the 'filterKey'.
 """
 function filterGrid(pGrid::PerplexGrid,filterKey::Integer)
@@ -464,9 +465,10 @@ end
 $(TYPEDSIGNATURES)
 
 This will take 'ax' and plot the pseudosection defined by 'pseudo'. These will be plotted such that they 
-can still be edited with a vector graphics editor. The 'Axis' type is defined in the CairoMakie package, but 
-it might work with Plots? The user should be able to modify the formatting of 'ax' before and after calling 
-this function.
+can still be edited with a vector graphics editor. Fields will be labeled by assemblage key, a list of unique 
+assemblages can be retrieved with 'getUniqueAssemblages' or they can be printed to a text file with 'outputAssemblages'. 
+The 'Axis' type is defined in the CairoMakie package, but it might work with Plots? The user should be able to 
+modify the formatting of 'ax' before and after calling this function.
 """
 function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
    
@@ -498,7 +500,7 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
     for i in range(1,lastindex(uniqueAsms))
         contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
         iGrid = filterGrid(pseudo,i)
-        scatter!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)), marker = :circle, strokecolor = :black,strokewidth = 1,color = :transparent)
+        scatter!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)), marker = :circle, strokecolor = :black,strokewidth = 1,color = :transparent,markersize = 5)
         text!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)),text = string(i))
     end
 
@@ -511,4 +513,26 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
     ax.limits = (xMin,xMax,yMin,yMax)
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Creates a text file called 'fileName.txt' with a list of each assemblage in 'pseudo'.
+"""
+function outputAssemblages(fileName::String,pseudo::PerplexGrid)
+    uniqueAsms = listUniqueAssemblages(pseudo.assemblages)
+    
+    writeFile = open(fileName*".txt","w")
+
+    for asm in uniqueAsms
+        
+        wLine = string(asm.key)*" = "*join(asm.phases," ")*"\n"
+        write(writeFile, wLine)
+    end
+
+    close(writeFile)
+end
+
+function readWeramiOutput(fileName::String)
+
+end
 end

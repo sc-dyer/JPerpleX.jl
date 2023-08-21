@@ -3,7 +3,7 @@ using CairoMakie
 # using Makie.Colors
 # using Statistics
 
-fig = Figure(font = "Trebuchet",fontsize = 18)
+fig = Figure(font = "Helvetica",fontsize = 18)
 ax = Axis(fig[1,1],
     xlabelsize = 28,
     ylabelsize = 28,
@@ -24,10 +24,11 @@ ax = Axis(fig[1,1],
     yminorticksize = 5,
     yminortickwidth = 2,
     xgridvisible = false,
-    ygridvisible = false
+    ygridvisible = false,
+    aspect = 1.0
 )
 
-pseudo = getPseudosection("bl691",tempInC=true)
+pseudo = getPseudosection("bl691",tempInC=true, pInKBar = true)
 # x = getX.(pseudo.assemblages)
 # y = getY.(pseudo.assemblages)
 # xAx = pseudo.xAx
@@ -89,4 +90,6 @@ pseudo = getPseudosection("bl691",tempInC=true)
 
 plotPseudosection!(ax,pseudo)
 
-save("testfig.svg",fig)
+save("bl691.svg",fig)
+
+outputAssemblages("bl691_assemblages",pseudo)

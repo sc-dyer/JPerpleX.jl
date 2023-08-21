@@ -21,13 +21,15 @@ export
     filterGrid,
     filterKeyArray,
     plotPseudosection!,
-    outputAssemblages
+    outputAssemblages,
+    readWeramiOutput
 using
     DocStringExtensions,
     Reexport,
     CairoMakie,
     Statistics,
-    Makie.Colors
+    Makie.Colors,
+    DataFrames
 
 @reexport using PetroBase
 # Write your package code here.
@@ -281,6 +283,7 @@ struct PerplexGrid
     yAx::String
 end
 
+
 """
 $(TYPEDSIGNATURES)
 
@@ -289,7 +292,9 @@ vertex calculation of the given 'datFile' and provide a 'PerplexGrid'. If 'tempI
 temperature variables will be converted to °C. If 'pInkBar' is set to 'true', pressure variables 
 will be converted to kBar.
 """
-function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = false)
+function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool = false)
+
+    #Might want to convert return type to a DataFrame for easier use?
 
     #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
     #Start by initializing all the necessary variables
@@ -334,13 +339,13 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = fals
     if occursin("T(K)", xVarName) && tempInC
         xMin = xMin-273.15
         xMax = xMax-273.15
-        xVarName  = "T (°C)"
+        xVarName  = "T(°C)"
     end
 
     if occursin("T(K)",yVarName) && tempInC
         yMin = yMin-273.15
         yMax = yMax-273.15
-        yVarName  = "T (°C)"
+        yVarName  = "T(°C)"
     end
 
     #bar to kbar conversion
@@ -348,14 +353,14 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar = fals
         xMin = xMin/1000
         xMax = xMax/1000
         xInc = xInc/1000
-        xVarName  = "P (kBar)"
+        xVarName  = "P(kBar)"
     end
 
     if occursin("P(bar)",yVarName) && pInKBar
         yMin = yMin/1000
         yMax = yMax/1000
         yInc = yInc/1000
-        yVarName  = "P (kBar)"
+        yVarName  = "P(kBar)"
     end
     #Convert purePhases to list of strings
     phaseName = rstrip(purePhases[1:purePhaseNameL])
@@ -532,7 +537,61 @@ function outputAssemblages(fileName::String,pseudo::PerplexGrid)
     close(writeFile)
 end
 
-function readWeramiOutput(fileName::String)
+"""
+$(TYPEDSIGNATURES)
 
+Reads the output file of a werami run and returns a 'DataFrame' that can be used to create contour plots. If 'tempInC' is set to 'true', 
+temperature variables will be converted to °C. If 'pInkBar' is set to 'true', pressure variables will be converted to kBar.
+"""
+function readWeramiOutput(fileName::String; tempInC::Bool = false, pInKBar::Bool = false)
+
+    readFile = open(fileName,"r")
+    lines = readlines(readFile)
+
+    #Assumes a specific file structure with variable headings at line 13
+    headings = split(lines[13])
+    #Set up arrays to read into
+    xVals = Array{Float64}([])
+    yVals = Array{Float64}([])
+    varVals = Array{Array{Float64}}([])
+    for i in range(3,lastindex(headings))
+        push!(varVals,[])
+    end
+
+    #Parsing out the data
+    for i in range(14,lastindex(lines))
+        vals = split(lines[i])
+        push!(xVals,parse(Float64,vals[1]))
+        push!(yVals,parse(Float64,vals[2]))
+
+        for j in range(3,lastindex(vals))
+            val = parse(Float64,vals[j])
+            if isnan(val)
+                val = 0.0 #NaN is a stand in for 0 in the dataset 
+            end
+            push!(varVals[j-2],val)
+        end
+    end
+
+    #Put it all in a DataFrame
+    df = DataFrame(headings[1]=>xVals,headings[2]=>yVals)
+    for i in range(3,lastindex(headings))
+        
+        df[:,Symbol(headings[i])] = varVals[i-2]
+    end
+
+    if tempInC
+        rename!(df,Symbol("T(K)") => "T(°C)")
+        println(names(df))
+        df[!,Symbol("T(°C)")] .-= 273.15
+    end
+
+    if pInKBar
+        rename!(df,Symbol("P(bar)") => "P(kbar)")
+        df[!,Symbol("P(kbar)")] ./= 1000
+    end
+    
+    return df
 end
+
 end

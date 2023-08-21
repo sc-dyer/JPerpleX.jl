@@ -1,5 +1,6 @@
 using JPerpleX
 using CairoMakie
+using DataFrames
 # using Makie.Colors
 # using Statistics
 
@@ -90,6 +91,11 @@ pseudo = getPseudosection("bl691",tempInC=true, pInKBar = true)
 
 plotPseudosection!(ax,pseudo)
 
-save("bl691.svg",fig)
+# save("bl691.svg",fig)
 
 outputAssemblages("bl691_assemblages",pseudo)
+# empty!(ax) #Empty axis but maintains extent, formatting, etc
+contourdata = readWeramiOutput("bl691_1.tab",tempInC = true, pInKBar = true)
+
+contour!(contourdata[!,1],contourdata[!,2],contourdata[!,3],labels=true)
+save("bl691_melt_overlay.svg",fig)

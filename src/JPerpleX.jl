@@ -582,7 +582,6 @@ function readWeramiOutput(fileName::String; tempInC::Bool = false, pInKBar::Bool
 
     if tempInC
         rename!(df,Symbol("T(K)") => "T(°C)")
-        println(names(df))
         df[!,Symbol("T(°C)")] .-= 273.15
     end
 

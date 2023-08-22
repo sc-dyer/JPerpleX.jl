@@ -307,6 +307,7 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
     #String arrays are just very long strings
     purePhases = rpad("",K1*purePhaseNameL)
     solPhases = rpad("",H9*solPhaseAbbrL)
+    numPhases = fill(Int32(0),K3)
     #Apparently floats have to be passed as an array, no idea why
     xMin = [0.0]
     xMax = [0.0]
@@ -318,9 +319,9 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
     yVarName = rpad("",varNameL)
 
     ccall((:__perplexwrap_MOD_pseudosection,joinpath(@__DIR__,"perplexwrap.so")),
-        Cvoid,(Cstring,Ref{Int32},Ref{Int32},Ref{Int32},Ref{Int32},Cstring,Cstring,Ref{Float64},Ref{Float64},
+        Cvoid,(Cstring,Ref{Int32},Ref{Int32},Ref{Int32},Ref{Int32},Cstring,Cstring,Ref{Int32},Ref{Float64},Ref{Float64},
         Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Cstring,Cstring),
-        fileName,sizeof(fileName),grid,gridToAssem,assemToPhase,purePhases,solPhases,
+        fileName,sizeof(fileName),grid,gridToAssem,assemToPhase,purePhases,solPhases,numPhases,
         xMin,xMax,yMin,yMax,xInc,yInc,xVarName,yVarName)
 
     #WARNING!!!!!!! DO NOT CHANGE ANYTHING ABOVE THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
@@ -375,7 +376,7 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
     end
 
     #Convert solPhases to list of strings
-    phaseName = phaseName = rstrip(solPhases[1:solPhaseAbbrL-1])
+    phaseName = rstrip(solPhases[1:solPhaseAbbrL-1])
     solPhaseArr = Array{String}([])
     count = 1
     while length(phaseName) > 0 && count*solPhaseAbbrL < length(solPhases)
@@ -399,14 +400,15 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
             y = yMin + yInc*(ix[2]-1)
             asmKey = gridToAssem[grid[ix[1],ix[2]]]#This tells us what the assemblage is
             phaseListIndex = assemToPhase[:,asmKey]#This gives us the list of phases in this assemblage
+          
             phaseList = Array{String}([])
             
-            for index in phaseListIndex
+            for i in range(1,numPhases[asmKey])
                 #If the index is positive its a solution, if not its a pure phase
-                if index > 0
-                    push!(phaseList,solPhaseArr[index])
-                elseif index < 0
-                    push!(phaseList,purePhaseArr[-index])
+                if phaseListIndex[i]> 0
+                    push!(phaseList,solPhaseArr[phaseListIndex[i]])
+                elseif phaseListIndex[i] < 0
+                    push!(phaseList,purePhaseArr[-phaseListIndex[i]])
                 end
             end
 

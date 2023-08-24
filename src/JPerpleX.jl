@@ -569,7 +569,7 @@ function readWeramiOutput(fileName::String; tempInC::Bool = false, pInKBar::Bool
         for j in range(3,lastindex(vals))
             val = parse(Float64,vals[j])
             if isnan(val)
-                val = 0.0 #NaN is a stand in for 0 in the dataset 
+                val = 0.0 #Problems when plotting with NaN with contours
             end
             push!(varVals[j-2],val)
         end
@@ -582,12 +582,12 @@ function readWeramiOutput(fileName::String; tempInC::Bool = false, pInKBar::Bool
         df[:,Symbol(headings[i])] = varVals[i-2]
     end
 
-    if tempInC
+    if tempInC && hasproperty(df,"T(K)")
         rename!(df,Symbol("T(K)") => "T(°C)")
         df[!,Symbol("T(°C)")] .-= 273.15
     end
 
-    if pInKBar
+    if pInKBar && hasproperty(df,"P(bar)")
         rename!(df,Symbol("P(bar)") => "P(kbar)")
         df[!,Symbol("P(kbar)")] ./= 1000
     end

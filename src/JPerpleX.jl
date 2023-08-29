@@ -503,14 +503,16 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
         contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
     end
 
-    #For added flair, we add outlines and labels to each assemblage
-    
+    #For added flair, we add outlines and labels to each assemblages
     for i in range(1,lastindex(uniqueAsms))
-        # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
-        contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
         iGrid = filterGrid(pseudo,i)
         scatter!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)), marker = :circle, strokecolor = :black,strokewidth = 1,color = :transparent,markersize = 5)
         text!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)),text = string(i))
+    end
+    #Making the contours seperate so they can be selected easily in post-processing
+    for i in range(1,lastindex(uniqueAsms))
+        # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
+        contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
     end
 
     ax.xlabel = pseudo.xAx

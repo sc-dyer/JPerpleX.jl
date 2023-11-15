@@ -71,7 +71,7 @@ using Test
 
         
         pseudo = getPseudosection("bl691/bl691",tempInC=true, pInKBar = true)
-
+        
         # uniqueAsm = listUniqueAssemblages(pseudo.assemblages)
         # @test length(uniqueAsm) == 48
         # @test uniqueAsm[8].key == 8

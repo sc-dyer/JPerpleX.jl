@@ -448,6 +448,7 @@ function filterKeyArray(asms::Array{Assemblage},filterKey::Integer)
 
 end
 
+
 """
 $(TYPEDSIGNATURES)
 
@@ -500,7 +501,13 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
     #They should be roughly halfway beetween grid points in a smoothed line
     for i in range(1,lastindex(uniqueAsms))
         colorVal = 1-(1-(length(uniqueAsms[i].phases)-minPhaseVar)/(maxPhaseVar-minPhaseVar))*0.8
-        contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
+        # contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
+        thisGrid = filterGrid(pseudo,i)
+        if length(thisGrid) > 2
+            triplot!(ax,getX.(thisGrid),getY.(thisGrid),show_convex_hull = true, strokewidth = 0,
+                convex_hull_color = :black, convex_hull_linestyle = :solid, convex_hull_linewidth = 2, triangle_color = Colors.HSV(0,0,colorVal))
+        end
+        
     end
 
     #For added flair, we add outlines and labels to each assemblages
@@ -510,10 +517,10 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
         text!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)),text = string(i))
     end
     #Making the contours seperate so they can be selected easily in post-processing
-    for i in range(1,lastindex(uniqueAsms))
-        # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
-        contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-    end
+    # for i in range(1,lastindex(uniqueAsms))
+    #     # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
+    #     contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
+    # end
 
     ax.xlabel = pseudo.xAx
     ax.ylabel = pseudo.yAx

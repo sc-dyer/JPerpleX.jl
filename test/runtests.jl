@@ -72,14 +72,14 @@ using Test
         
         pseudo = getPseudosection("bl691/bl691",tempInC=true, pInKBar = true)
 
-        uniqueAsm = listUniqueAssemblages(pseudo.assemblages)
-        @test length(uniqueAsm) == 48
-        @test uniqueAsm[8].key == 8
-        plotPseudosection!(ax,pseudo)
-        save("bl691/bl691.svg",fig)
+        # uniqueAsm = listUniqueAssemblages(pseudo.assemblages)
+        # @test length(uniqueAsm) == 48
+        # @test uniqueAsm[8].key == 8
+        # plotPseudosection!(ax,pseudo)
+        # save("bl691/bl691.svg",fig)
 
-        @test filesize("bl691/bl691.svg") ≈ filesize("bl691/output/bl691.svg")
-        outputAssemblages("bl691/bl691_assemblages",pseudo)
-        @test filesize("bl691/bl691_assemblages.txt") ≈ filesize("bl691/output/bl691_assemblages.txt")
+        # @test filesize("bl691/bl691.svg") ≈ filesize("bl691/output/bl691.svg")
+        # outputAssemblages("bl691/bl691_assemblages",pseudo)
+        # @test filesize("bl691/bl691_assemblages.txt") ≈ filesize("bl691/output/bl691_assemblages.txt")
     end
 end

@@ -389,19 +389,23 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
     end
     
     
-    griddedAssemblage = Array{Assemblage}([])
+    # griddedAssemblage = Array{Assemblage}([])
+
+    assemblageDF = DataFrame(Phases = Array{String}[],Key=Int64[], x = Float64[], y = Float64[])
+    maxIndex = [0,0]
     #Decoding the grid and assigning assemblages
     for ix in CartesianIndices(grid)#Best way to iterate through a matrix apparently?
         #ix[1] is the x-axis, ix[2] is the y-axis and these are integer indices in grid
 
         if grid[ix[1],ix[2]] > 0
             
+            maxIndex = ix
             #This is the conversion from grid points to x-y points
-            x = xMin + xInc*(ix[1]-1)
-            y = yMin + yInc*(ix[2]-1)
+            
             asmKey = gridToAssem[grid[ix[1],ix[2]]]#This tells us what the assemblage is
             phaseListIndex = assemToPhase[:,asmKey]#This gives us the list of phases in this assemblage
-          
+            x = xMin + xInc*(ix[1]-1)
+            y = yMin + yInc*(ix[2]-1)
             phaseList = Array{String}([])
             
             for i in range(1,numPhases[asmKey])
@@ -413,16 +417,16 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
                 end
             end
 
-            asm = Assemblage(phaseList,x,y,asmKey)
-            push!(griddedAssemblage,asm)
+            # asm = Assemblage(phaseList,x,y,asmKey)
+            push!(assemblageDF,[phaseList,asmKey,x,y])
 
         end
 
     end
     
-    cartGrid = CartesionGrid((xMin,yMin),(xMax,yMax),dims=(xInc,yInc))
+    cartGrid = CartesianGrid((maxIndex[1],maxIndex[2]))
 
-    assemblageTable = GeoTable(cartGrid,etable = (Assemblage = griddedAssemblage))
+    assemblageTable = GeoTable(cartGrid,etable = assemblageDF)
 
     return PerplexGrid(assemblageTable,rstrip(xVarName),rstrip(yVarName))
 end
@@ -463,7 +467,7 @@ function filterGrid(pGrid::PerplexGrid,filterKey::Integer)
 #Returns a list of assemblages with a key matching filterKey
     asms = Array{Assemblage}([])
 
-    for assem in pGrid.assemblages
+    for assem in pGrid.assemblages[!,:Assemblage]
         if assem.key == filterKey
             push!(asms,assem)
         end

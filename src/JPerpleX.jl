@@ -29,7 +29,8 @@ using
     CairoMakie,
     Statistics,
     Makie.Colors,
-    DataFrames
+    DataFrames,
+    GeoStats
 
 @reexport using PetroBase
 # Write your package code here.
@@ -276,7 +277,7 @@ $(TYPEDFIELDS)
 """
 struct PerplexGrid
     "Entire collection of points from the computation"
-    assemblages::Array{Assemblage}
+    assemblages::GeoTable
     "Variable name of the x-axis"
     xAx::String
     "Variable name of the y-axis"
@@ -386,8 +387,8 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
         phaseName = rstrip(solPhases[firstIndex:lastIndex])
         count += 1
     end
-
-
+    
+    
     griddedAssemblage = Array{Assemblage}([])
     #Decoding the grid and assigning assemblages
     for ix in CartesianIndices(grid)#Best way to iterate through a matrix apparently?
@@ -419,7 +420,11 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
 
     end
     
-    return PerplexGrid(griddedAssemblage,rstrip(xVarName),rstrip(yVarName))
+    cartGrid = CartesionGrid((xMin,yMin),(xMax,yMax),dims=(xInc,yInc))
+
+    assemblageTable = GeoTable(cartGrid,etable = (Assemblage = griddedAssemblage))
+
+    return PerplexGrid(assemblageTable,rstrip(xVarName),rstrip(yVarName))
 end
 
 """

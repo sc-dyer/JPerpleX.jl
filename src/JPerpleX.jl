@@ -420,8 +420,7 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
     for ix in CartesianIndices(grid)#Best way to iterate through a matrix apparently?
         #ix[1] is the x-axis, ix[2] is the y-axis and these are integer indices in grid
 
-        #TODO
-        #Make 4 points at each vertex of grid points here and see what happens
+        
         if grid[ix[1],ix[2]] > 0
             
             #This is the conversion from grid points to x-y points
@@ -534,34 +533,30 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
     #Ranges of the levels and colormaps are based on trial and error, do not change them
     #They should be roughly halfway beetween grid points in a smoothed line
     for i in range(1,lastindex(uniqueAsms))
+        # thisGrid = filterGrid(pseudo,i)
         colorVal = 1-(1-(length(uniqueAsms[i].phases)-minPhaseVar)/(maxPhaseVar-minPhaseVar))*0.8
-        # contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
+        
         thisGrid = filterGrid(pseudo,i)
-        if length(thisGrid) > 2
+        # if length(thisGrid) > 2
             #Using unique here is almost certainly problematic, I think this can be fixed by refactoring into DataFrames
             
-            sort!(thisGrid,by = getX)
-            j = 1
-            while j < lastindex(thisGrid)
-                k = j+1
-                while k < lastindex(thisGrid)
-                    if thisGrid[j] ≈ thisGrid[k]
-                        deleteat!(thisGrid,k)
-                    else
-                        k +=1
-                    end
+        sort!(thisGrid,by = getX)
+        j = 1
+        while j < lastindex(thisGrid)
+            k = j+1
+            while k < lastindex(thisGrid)
+                if thisGrid[j] ≈ thisGrid[k]
+                    deleteat!(thisGrid,k)
+                else
+                    k +=1
                 end
-                j += 1
             end
-            
-            println(length(thisGrid))
-            for asm in thisGrid
-                println(asm)
-            end
-           
-            triplot!(ax,getX.(thisGrid),getY.(thisGrid),show_convex_hull = true, strokewidth = 0,
-                convex_hull_color = :black, convex_hull_linestyle = :solid, convex_hull_linewidth = 2, triangle_color = Colors.HSV(0,0,colorVal))
+            j += 1
         end
+        contourf!(ax,getX.(thisGrid),getY.(thisGrid),ones(length(thisGrid)),levels =-0.5:1:1.5,color = colorVal)#colormap = [:transparent,Colors.HSV(0,0,colorVal)])
+        #     triplot!(ax,getX.(thisGrid),getY.(thisGrid),show_convex_hull = true, strokewidth = 0,
+        #         convex_hull_color = :black, convex_hull_linestyle = :solid, convex_hull_linewidth = 2, triangle_color = Colors.HSV(0,0,colorVal))
+        # end
 
     end
 
@@ -572,10 +567,27 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
         text!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)),text = string(i))
     end
     #Making the contours seperate so they can be selected easily in post-processing
-    # for i in range(1,lastindex(uniqueAsms))
-    #     # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
-    #     contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-    # end
+    for i in range(1,lastindex(uniqueAsms))
+        thisGrid = filterGrid(pseudo,i)
+        # if length(thisGrid) > 2
+            #Using unique here is almost certainly problematic, I think this can be fixed by refactoring into DataFrames
+            
+        sort!(thisGrid,by = getX)
+        j = 1
+        while j < lastindex(thisGrid)
+            k = j+1
+            while k < lastindex(thisGrid)
+                if thisGrid[j] ≈ thisGrid[k]
+                    deleteat!(thisGrid,k)
+                else
+                    k +=1
+                end
+            end
+            j += 1
+        end
+        # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
+        contour!(ax,getX.(thisGrid),getY.(thisGrid),ones(length(thisGrid)),levels =-0.5:1:1.5,linewidth = 2, color = :black)#colormap = [:transparent,:black,:black],linewidth=2)
+    end
 
     ax.xlabel = pseudo.xAx
     ax.ylabel = pseudo.yAx

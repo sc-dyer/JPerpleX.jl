@@ -231,6 +231,7 @@ function getY(asm::Assemblage)
     return asm.y
 end
 
+
 """
 $(TYPEDSIGNATURES)
 
@@ -240,6 +241,32 @@ function getKey(asm::Assemblage)
     return asm.key
 end
 
+
+function Base.:≈(asm1::Assemblage,asm2::Assemblage)
+
+    # allPhaseMatch = true
+    # for phase1 in asm1.phases
+    #     thisPhaseMatch = false
+    #     for phase2 in asm2.phases
+    #         if phase1 == phase2
+    #             thisPhaseMatch = true
+    #         end
+    #     end
+    #     if !thisPhaseMatch
+    #         allPhaseMatch = false
+    #     end
+    # end
+
+    if asm1.key == asm2.key
+        if round(asm1.x,digits = 10) ≈ round(asm2.x,digits = 10)
+            if round(asm1.y,digits = 10) ≈ round(asm2.y,digits=10)
+                return true
+            end
+        end
+    end
+    return false
+
+end
 """
 $(TYPEDSIGNATURES)
 
@@ -393,11 +420,14 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
     for ix in CartesianIndices(grid)#Best way to iterate through a matrix apparently?
         #ix[1] is the x-axis, ix[2] is the y-axis and these are integer indices in grid
 
+        
         if grid[ix[1],ix[2]] > 0
             
             #This is the conversion from grid points to x-y points
-            x = xMin + xInc*(ix[1]-1)
-            y = yMin + yInc*(ix[2]-1)
+            x1 = (xMin-xInc/2) + xInc*(ix[1]-1)
+            x2 = (xMin+xInc/2) + xInc*(ix[1]-1)
+            y1 = (yMin-yInc/2) + yInc*(ix[2]-1)
+            y2 = (yMin+yInc/2) + yInc*(ix[2]-1)
             asmKey = gridToAssem[grid[ix[1],ix[2]]]#This tells us what the assemblage is
             phaseListIndex = assemToPhase[:,asmKey]#This gives us the list of phases in this assemblage
           
@@ -412,8 +442,11 @@ function getPseudosection(datFile::String; tempInC::Bool = false, pInKBar::Bool 
                 end
             end
 
-            asm = Assemblage(phaseList,x,y,asmKey)
-            push!(griddedAssemblage,asm)
+            asm1 = Assemblage(phaseList,x1,y1,asmKey)
+            asm2 = Assemblage(phaseList,x2,y1,asmKey)
+            asm3 = Assemblage(phaseList,x1,y2,asmKey)
+            asm4 = Assemblage(phaseList,x2,y2,asmKey)
+            push!(griddedAssemblage,asm1,asm2,asm3,asm4)
 
         end
 
@@ -447,6 +480,7 @@ function filterKeyArray(asms::Array{Assemblage},filterKey::Integer)
     return keys
 
 end
+
 
 """
 $(TYPEDSIGNATURES)
@@ -499,8 +533,31 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
     #Ranges of the levels and colormaps are based on trial and error, do not change them
     #They should be roughly halfway beetween grid points in a smoothed line
     for i in range(1,lastindex(uniqueAsms))
+        # thisGrid = filterGrid(pseudo,i)
         colorVal = 1-(1-(length(uniqueAsms[i].phases)-minPhaseVar)/(maxPhaseVar-minPhaseVar))*0.8
-        contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
+        
+        thisGrid = filterGrid(pseudo,i)
+        # if length(thisGrid) > 2
+            #Using unique here is almost certainly problematic, I think this can be fixed by refactoring into DataFrames
+            
+        sort!(thisGrid,by = getX)
+        j = 1
+        while j < lastindex(thisGrid)
+            k = j+1
+            while k < lastindex(thisGrid)
+                if thisGrid[j] ≈ thisGrid[k]
+                    deleteat!(thisGrid,k)
+                else
+                    k +=1
+                end
+            end
+            j += 1
+        end
+        contourf!(ax,getX.(thisGrid),getY.(thisGrid),ones(length(thisGrid)),levels =-0.5:1:1.5,color = colorVal)#colormap = [:transparent,Colors.HSV(0,0,colorVal)])
+        #     triplot!(ax,getX.(thisGrid),getY.(thisGrid),show_convex_hull = true, strokewidth = 0,
+        #         convex_hull_color = :black, convex_hull_linestyle = :solid, convex_hull_linewidth = 2, triangle_color = Colors.HSV(0,0,colorVal))
+        # end
+
     end
 
     #For added flair, we add outlines and labels to each assemblages
@@ -511,8 +568,25 @@ function plotPseudosection!(ax::Axis,pseudo::PerplexGrid)
     end
     #Making the contours seperate so they can be selected easily in post-processing
     for i in range(1,lastindex(uniqueAsms))
+        thisGrid = filterGrid(pseudo,i)
+        # if length(thisGrid) > 2
+            #Using unique here is almost certainly problematic, I think this can be fixed by refactoring into DataFrames
+            
+        sort!(thisGrid,by = getX)
+        j = 1
+        while j < lastindex(thisGrid)
+            k = j+1
+            while k < lastindex(thisGrid)
+                if thisGrid[j] ≈ thisGrid[k]
+                    deleteat!(thisGrid,k)
+                else
+                    k +=1
+                end
+            end
+            j += 1
+        end
         # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
-        contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
+        contour!(ax,getX.(thisGrid),getY.(thisGrid),ones(length(thisGrid)),levels =-0.5:1:1.5,linewidth = 2, color = :black)#colormap = [:transparent,:black,:black],linewidth=2)
     end
 
     ax.xlabel = pseudo.xAx

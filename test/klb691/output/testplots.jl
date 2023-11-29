@@ -4,7 +4,7 @@ using DataFrames
 # using Makie.Colors
 # using Statistics
 
-fig = Figure(font = "B612-regular",fontsize = 18)
+fig = Figure(font = "B612",fontsize = 18)
 ax = Axis(fig[1,1],
     xlabelsize = 28,
     ylabelsize = 28,
@@ -29,7 +29,7 @@ ax = Axis(fig[1,1],
     aspect = 1.0
 )
 
-pseudo = getPseudosection("bl691",tempInC=true, pInKBar = true)
+pseudo = getPseudosection("klb691",tempInC=true, pInKBar = true)
 # x = getX.(pseudo.assemblages)
 # y = getY.(pseudo.assemblages)
 # xAx = pseudo.xAx
@@ -91,13 +91,9 @@ pseudo = getPseudosection("bl691",tempInC=true, pInKBar = true)
 
 plotPseudosection!(ax,pseudo)
 
-save("bl691.svg",fig)
+save("klb691.svg",fig)
 
-outputAssemblages("bl691_assemblages",pseudo)
+outputAssemblages("klb691_assemblages",pseudo)
 # empty!(ax) #Empty axis but maintains extent, formatting, etc
-contourdata = readWeramiOutput("bl691_1.tab",tempInC = true, pInKBar = true)
-
-contour!(contourdata[!,1],contourdata[!,2],contourdata[!,3],labels=true)
-save("bl691_melt_overlay.svg",fig)
 
 

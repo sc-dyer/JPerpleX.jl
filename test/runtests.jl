@@ -44,7 +44,7 @@ using Test
     @testset "Pseudosection test" begin
 
 
-        fig = Figure(font = "Helvetica",fontsize = 18)
+        fig = Figure(font = "B612",fontsize = 18)
         ax = Axis(fig[1,1],
             xlabelsize = 28,
             ylabelsize = 28,
@@ -81,5 +81,12 @@ using Test
         @test filesize("bl691/bl691.svg") ≈ filesize("bl691/output/bl691.svg")
         outputAssemblages("bl691/bl691_assemblages",pseudo)
         @test filesize("bl691/bl691_assemblages.txt") ≈ filesize("bl691/output/bl691_assemblages.txt")
+
+        pseudo2 = getPseudosection("klb691/klb691",tempInC=true,pInKBar=true)
+        empty!(ax)
+        plotPseudosection!(ax,pseudo2)
+        save("klb691/klb691.svg",fig)
+        @test filesize("klb691/klb691.svg") ≈ filesize("klb691/output/klb691.svg")
+        
     end
 end

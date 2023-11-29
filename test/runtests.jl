@@ -43,33 +43,11 @@ using Test
 
     @testset "Pseudosection test" begin
 
-
-        fig = Figure(font = "B612",fontsize = 18)
-        ax = Axis(fig[1,1],
-            xlabelsize = 28,
-            ylabelsize = 28,
-            xminorticksvisible = true,
-            yminorticksvisible = true,
-            xticksmirrored = true,
-            yticksmirrored = true,
-            xtickalign = 1,
-            ytickalign = 1,
-            xminortickalign = 1,
-            yminortickalign = 1,
-            xticksize = 10,
-            xtickwidth = 2,
-            yticksize = 10,
-            ytickwidth = 2,
-            xminorticksize = 5,
-            xminortickwidth = 2,
-            yminorticksize = 5,
-            yminortickwidth = 2,
-            xgridvisible = false,
-            ygridvisible = false,
-            aspect = 1.0
-        )
-
-        
+        include("PlotDefaults.jl")
+       
+        set_theme!(myTheme)
+        fig = Figure()
+        ax = Axis(fig[1,1])
         pseudo = getPseudosection("bl691/bl691",tempInC=true, pInKBar = true)
 
         uniqueAsm = listUniqueAssemblages(pseudo.assemblages)

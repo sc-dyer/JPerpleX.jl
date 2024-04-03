@@ -537,7 +537,8 @@ assemblages can be retrieved with 'unique_assemblages' or they can be printed to
         markersize = 5,
         markerfill = :transparent,
         markerstroke = :black,
-        markerstrokewidth = 1 
+        markerstrokewidth = 1,
+        labelfontsize = 12
 
     )
 end
@@ -585,7 +586,7 @@ function Makie.plot!(pseudo::Pseudosection)
         igrid = filtergrid(pgrid,i)
         scatter!(pseudo,mean(x.(igrid)),mean(y.(igrid)), marker = pseudo.marker, strokecolor = pseudo.markerstroke,strokewidth=pseudo.markerstrokewidth,
                     color = pseudo.markerfill,markersize = pseudo.markersize)
-        text!(pseudo,mean(x.(igrid)),mean(y.(igrid)),text = string(i))
+        text!(pseudo,mean(x.(igrid)),mean(y.(igrid)),text = string(i),fontsize = pseudo.labelfontsize)
     end
     #Making the contours seperate so they can be selected easily in post-processing
     for i in range(1,lastindex(present_assemblages))

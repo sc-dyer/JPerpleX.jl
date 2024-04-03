@@ -9,73 +9,22 @@ include("../../PlotDefaults.jl")
 set_theme!(myTheme)
 fig = Figure()
 ax = Axis(fig[1,1])
-pseudo = getPseudosection("bl691",tempInC=true, pInKBar = true)
-# x = getX.(pseudo.assemblages)
-# y = getY.(pseudo.assemblages)
-# xAx = pseudo.xAx
-# yAx = pseudo.yAx
+ax.xlabel = pseudo.xaxis
+ax.ylabel = pseudo.yaxis
+xmin = minimum(x.(pseudo.assemblages))
+ymin = minimum(y.(pseudo.assemblages))
+xmax = maximum(x.(pseudo.assemblages))
+ymax = maximum(y.(pseudo.assemblages))
+ax.limits = (xmin,xmax,ymin,ymax)
+pseudo = get_pseudosection("bl691",iscelsius=true, iskbar = true)
 
-
-
-# function minMaxPhaseVar(pseudo::PerplexGrid)
-#     uniqueAsms = listUniqueAssemblages(pseudo.assemblages)
-#     maxVar = 0
-#     minVar = 100
-#     for asm in uniqueAsms
-#         if length(asm.phases) >maxVar
-#             maxVar = length(asm.phases)
-#         end
-#         if length(asm.phases) <minVar
-#             minVar = length(asm.phases)
-#         end
-
-#     end
-
-#     return minVar, maxVar
-# end
-# uniqueAsms = listUniqueAssemblages(pseudo.assemblages)
-# for i in range(1,lastindex(uniqueAsms))
-    
-#     minV, maxV = minMaxPhaseVar(pseudo)
-#     colorVal = 1-(1-(length(uniqueAsms[i].phases)-minV)/(maxV-minV))*0.8
-#     contourf!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,colorVal)])
-    
-# end
-
-# for i in range(1,lastindex(uniqueAsms))
-#     contour!(ax,x,y,filterKeyArray(pseudo.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-#     iGrid = filterGrid(pseudo,i)
-#     scatter!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)), marker = :circle, strokecolor = :black,strokewidth = 1,color = :transparent)
-#     text!(ax,mean(getX.(iGrid)),mean(getY.(iGrid)),text = string(i))
-# end
-
-# # contourf!(x,y,filterGrid(pseudo,4),levels =-0.5:1:1.5,colormap = [:transparent,:green])
-# # contourf!(x,y,filterGrid(pseudo,5),levels =-0.5:1:1.5,colormap = [:transparent,:orange])
-# # contourf!(x,y,filterGrid(pseudo,6),levels =-0.5:1:1.5,colormap = [:transparent,:red])
-# # contourf!(x,y,filterGrid(pseudo,7),levels =-0.5:1:1.5,colormap = [:transparent,:blue])
-# # contourf!(x,y,filterGrid(pseudo,8),levels =-0.5:1:1.5,colormap = [:transparent,:purple])
-# # contourf!(x,y,filterGrid(pseudo,9),levels =-0.5:1:1.5,colormap = [:transparent,Colors.HSV(0,0,1)])
-# # contour!(x,y,filterGrid(pseudo,4),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-# # contour!(x,y,filterGrid(pseudo,5),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-# # contour!(x,y,filterGrid(pseudo,6),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-# # contour!(x,y,filterGrid(pseudo,7),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-# # contour!(x,y,filterGrid(pseudo,8),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-# # contour!(x,y,filterGrid(pseudo,9),levels =-0.5:1:1.5,colormap = [:transparent,:black,:black],linewidth=2)
-# ax.xlabel = xAx
-# ax.ylabel = yAx
-# xMin = minimum(getX.(pseudo.assemblages))
-# yMin = minimum(getY.(pseudo.assemblages))
-# xMax = maximum(getX.(pseudo.assemblages))
-# yMax = maximum(getY.(pseudo.assemblages))
-# ax.limits = (xMin,xMax,yMin,yMax)
-
-plotPseudosection!(ax,pseudo)
+pseudosection!(ax,pseudo)
 
 save("bl691.svg",fig)
 
-outputAssemblages("bl691_assemblages",pseudo)
+output_assemblages("bl691_assemblages",pseudo)
 # empty!(ax) #Empty axis but maintains extent, formatting, etc
-contourdata = readWeramiOutput("bl691_1.tab",tempInC = true, pInKBar = true)
+contourdata = read_werami_output("bl691_1.tab",tempInC = true, pInKBar = true)
 
 contour!(contourdata[!,1],contourdata[!,2],contourdata[!,3],labels=true)
 save("bl691_melt_overlay.svg",fig)

@@ -69,6 +69,13 @@ using Test
 
         pseudo2 = get_pseudosection("klb691/klb691",iscelsius=true,iskbar=true)
         empty!(ax)
+        ax.xlabel = pseudo2.xaxis
+        ax.ylabel = pseudo2.yaxis
+        xmin = minimum(x.(pseudo2.assemblages))
+        ymin = minimum(y.(pseudo2.assemblages))
+        xmax = maximum(x.(pseudo2.assemblages))
+        ymax = maximum(y.(pseudo2.assemblages))
+        ax.limits = (xmin,xmax,ymin,ymax)
         pseudosection!(ax,pseudo2)
         save("klb691/klb691.svg",fig)
         @test filesize("klb691/klb691.svg") ≈ filesize("klb691/output/klb691.svg")

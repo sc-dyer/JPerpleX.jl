@@ -60,7 +60,7 @@ $(TYPEDSIGNATURES)
 Calls the 'initMeemum' subroutine from 'perplexwrap.f' and initialize meemum using the local 'datFile' for the model parameters. 
 This will return an array of 'Component' variables.
 """
-function init_meemum(datfile::String)
+function init_meemum(datfile)
     #function wrapper for the initmeemum subroutine in perplexwrap.f
     #Returns list of components with their composition
     filename = datfile
@@ -112,7 +112,7 @@ This is function runs the 'minimizePoint' function in 'perplexwrap.f '
 for the provided composition ('comps') at the given pressure ('pres') and temperature ('temp')  in bars and °C. 
 This will return a PetroSystem.
 """
-function minimizepoint(comps::Array{Component},temperature::Real,pressure::Real; suppresswarn::Bool = false)
+function minimizepoint(comps,temperature,pressure; suppresswarn= false)
 
     #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
     #INPUT variables
@@ -250,7 +250,7 @@ $(TYPEDSIGNATURES)
 
 Returns an array of 'Assemblage' variables constructed from 'asms' where each item in the array has a unique key
 """
-function unique_assemblages(asms::Array{Assemblage})
+function unique_assemblages(asms)
 
     present_assemblages = Array{Assemblage}([])
     
@@ -297,7 +297,7 @@ vertex calculation of the given 'datFile' and provide a 'PerplexGrid'. If 'iscel
 temperature variables will be converted to °C. If 'iskbar' is set to 'true', pressure variables 
 will be converted to kBar.
 """
-function get_pseudosection(datfile::String; iscelsius::Bool = false, iskbar::Bool = false)
+function get_pseudosection(datfile; iscelsius = false, iskbar = false)
 
     #Might want to convert return type to a DataFrame for easier use?
 
@@ -434,7 +434,7 @@ This is a function used for plotting. It will return a list of integers of the s
 Where each index corresponds to the same asm. These will have a value of 1 if 'asm[i]' is the same as 
 the 'filterKey' and 0 if not.
 """
-function filterkeys(asms::Array{Assemblage},filterkey::Integer)
+function filterkeys(asms,filterkey)
 #Returns an array of 1s and 0s where 1 is in the index in asms that has a key that matches filterKey
 #used for plotting
     keys = key.(asms)
@@ -459,7 +459,7 @@ $(TYPEDSIGNATURES)
 This will take 'pGrid' and return an array of all the 'Assemblage' variables in 'pGrid.assemblages' that match 
 the 'filterKey'.
 """
-function filtergrid(pgrid::PerplexGrid,filterkey::Integer)
+function filtergrid(pgrid,filterkey)
 #Returns a list of assemblages with a key matching filterKey
     assemblages = Array{Assemblage}([])
 
@@ -606,7 +606,7 @@ $(TYPEDSIGNATURES)
 
 Creates a text file called 'filename.txt' with a list of each assemblage in 'pseudo'.
 """
-function output_assemblages(filename::String,pseudo::PerplexGrid)
+function output_assemblages(filename,pseudo)
     present_assemblages = unique_assemblages(pseudo.assemblages)
     
     writefile = open(filename*".txt","w")
@@ -626,7 +626,7 @@ $(TYPEDSIGNATURES)
 Reads the output file of a werami run and returns a 'DataFrame' that can be used to create contour plots. If 'iscelsius' is set to 'true', 
 temperature variables will be converted to °C. If 'iskbar' is set to 'true', pressure variables will be converted to kBar.
 """
-function read_werami_output(filename::String; iscelsius::Bool = false, iskbar::Bool = false)
+function read_werami_output(filename; iscelsius = false, iskbar = false)
 
     readfile = open(filename,"r")
     lines = readlines(readfile)

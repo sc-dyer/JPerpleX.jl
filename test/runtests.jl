@@ -46,7 +46,7 @@ using Test
         include("PlotDefaults.jl")
        
         set_theme!(myTheme)
-        fig = Figure()
+        fig = Figure(size = (600,450))
         ax = Axis(fig[1,1])
         pseudo = get_pseudosection("bl691/bl691",iscelsius=true, iskbar = true)
 

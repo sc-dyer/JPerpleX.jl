@@ -1,6 +1,7 @@
 #Tests adapted from main Perple_X repo
 using JPerpleX
 using CairoMakie
+
 using Test
 
 @testset "JPerplex.jl" begin

@@ -109,7 +109,7 @@ This is function runs the 'minimizePoint' function in 'perplexwrap.f '
 for the provided composition ('comps') at the given pressure ('pres') and temperature ('temp')  in bars and °C. 
 This will return a PetroSystem.
 """
-function minimizepoint(comps,temperature,pressure; suppresswarn= false)
+function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN, μ1 = NaN, μ2 = NaN)
     if !is_init
         throw(ErrorException("You must run init_meemum() before minimizepoint() can be used"))
     else
@@ -134,9 +134,10 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false)
         phasecompositions = fill(0.0,K0,K5)
         systemproperties = fill(0.0,I8)
         
+        
         ccall((:__perplexwrap_MOD_minimizepoint,joinpath(@__DIR__,"perplexwrap.so")),
-            Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64}),
-            componentstring,systemcomposition,pressure,temperature,suppresswarn,chempotentials,phasenames,phaseproperties,phasecompositions,
+            Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64}),
+            componentstring,systemcomposition,pressure,temperature,X,μ1,μ2,suppresswarn,chempotentials,phasenames,phaseproperties,phasecompositions,
             systemproperties)
 
 

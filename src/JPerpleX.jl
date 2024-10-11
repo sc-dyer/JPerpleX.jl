@@ -48,6 +48,8 @@ const MAX_PHASE_NAME_L = 14
 const PURE_PHASE_NAME_L = 8
 const SOL_PHASE_ABBREV_L = 6
 const VARIABLE_NAME_L = 8
+
+is_init::Bool = false
 # const almostgreys = loadcolorscheme(:almostgreys,[Colors.HSV(0,0,0.2),Colors.HSV(0,0,1)])
 """
 $(TYPEDSIGNATURES)
@@ -94,7 +96,7 @@ function init_meemum(datfile)
         end
        
     end
-
+    global is_init = true
     return components
     
 end
@@ -108,92 +110,95 @@ for the provided composition ('comps') at the given pressure ('pres') and temper
 This will return a PetroSystem.
 """
 function minimizepoint(comps,temperature,pressure; suppresswarn= false)
-
-    #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
-    #INPUT variables
-    temperature += 273 #Convert to K
-    componentnames = name.(comps)
-    componentstring = ""
-    #Convert the array of names into a format readable by fortran
-    for name in componentnames
-        componentstring *= rpad(name,MAX_COMPONENT_NAME_L)
-    end
-    componentstring = rpad(componentstring,K5*MAX_COMPONENT_NAME_L)
-    systemcomposition= vcat(concentration.(comps),fill(0.0,K5-length(comps)))
-    
-    #OUTPUT variables
-    #Any anticipated output from Fortran has to be put into an array of the same shape
-    
-    chempotentials = fill(0.0,K8)
-    phasenames = rpad("",K5*MAX_PHASE_NAME_L)
-    phaseproperties = fill(0.0,I8,K5)
-    phasecompositions = fill(0.0,K0,K5)
-    systemproperties = fill(0.0,I8)
-    
-    ccall((:__perplexwrap_MOD_minimizepoint,joinpath(@__DIR__,"perplexwrap.so")),
-        Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64}),
-        componentstring,systemcomposition,pressure,temperature,suppresswarn,chempotentials,phasenames,phaseproperties,phasecompositions,
-        systemproperties)
-
-
-    #WARNING!!!!!!! DO NOT CHANGE ANYTHING ABOVE THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
-
-    
-    #Make a new array of components identical to the input, but modify the chemical potential value
-    newcomponents = Array{Component}([])
-    for i in 1:lastindex(comps)
-       push!(newcomponents,Component(comps[i],μ=chempotentials[i]))
-    end
-
-
-    #Make an array of Phase objects with the properties calculated from PerpleX
-    #Iterate through the phaseProperties and connect it with the phase name and composition
-    phasearray = Array{Phase}([])
-    for i in 1:K5
-        #Check to make sure a phase exists at this index by looking at molar volume
-        if phaseproperties[1,i] > 0
-            iphasecomposition = Array{Component}([])
-            iphasename = rstrip(phasenames[(i-1)*MAX_PHASE_NAME_L+1:i*MAX_PHASE_NAME_L])
-            for j in 1:lastindex(comps)
-                push!(iphasecomposition,Component(comps[j],phasecompositions[j,i]))
-            end
-            #Assign appropriate values from the array, based on comments in perplex code
-            iphase = Phase(name = iphasename, 
-                            composition = iphasecomposition, 
-                            mol = phaseproperties[16,i], 
-                            vol = phaseproperties[16,i]*phaseproperties[1,i], 
-                            mass = phaseproperties[16,i]*phaseproperties[17,i],
-                            ρ =phaseproperties[10,i],
-                            molarmass = phaseproperties[17,i],
-                            G = phaseproperties[11,i],
-                            H =phaseproperties[2,i],
-                            S = phaseproperties[15,i],
-                            Cp = phaseproperties[12,i],
-                            Vmol = phaseproperties[1,i],
-                            Cp_Cv = phaseproperties[28,i],
-                            α = phaseproperties[13,i],
-                            β = phaseproperties[14,i] )
-            push!(phasearray,iphase)
+    if !is_init
+        throw(ErrorException("You must run init_meemum() before minimizepoint() can be used"))
+    else
+        #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
+        #INPUT variables
+        temperature += 273 #Convert to K
+        componentnames = name.(comps)
+        componentstring = ""
+        #Convert the array of names into a format readable by fortran
+        for name in componentnames
+            componentstring *= rpad(name,MAX_COMPONENT_NAME_L)
         end
-    end
+        componentstring = rpad(componentstring,K5*MAX_COMPONENT_NAME_L)
+        systemcomposition= vcat(concentration.(comps),fill(0.0,K5-length(comps)))
+        
+        #OUTPUT variables
+        #Any anticipated output from Fortran has to be put into an array of the same shape
+        
+        chempotentials = fill(0.0,K8)
+        phasenames = rpad("",K5*MAX_PHASE_NAME_L)
+        phaseproperties = fill(0.0,I8,K5)
+        phasecompositions = fill(0.0,K0,K5)
+        systemproperties = fill(0.0,I8)
+        
+        ccall((:__perplexwrap_MOD_minimizepoint,joinpath(@__DIR__,"perplexwrap.so")),
+            Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64}),
+            componentstring,systemcomposition,pressure,temperature,suppresswarn,chempotentials,phasenames,phaseproperties,phasecompositions,
+            systemproperties)
 
-    system = PetroSystem(composition = newcomponents,
-                        phases = phasearray,
-                        mol = systemproperties[16],
-                        vol = systemproperties[16]*systemproperties[1],
-                        mass = systemproperties[16]*systemproperties[17],
-                        ρ = systemproperties[10],
-                        molarmass = systemproperties[17],
-                        G = systemproperties[11],
-                        H = systemproperties[2],
-                        S = systemproperties[15],
-                        Cp = systemproperties[12],
-                        Vmol = systemproperties[1],
-                        Cp_Cv = systemproperties[28],
-                        α = systemproperties[13],
-                        β = systemproperties[14])
-    #return compoNames,cPotentials,phaseNames,phaseProps,phaseComps,sysProps
-    return system
+
+        #WARNING!!!!!!! DO NOT CHANGE ANYTHING ABOVE THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
+
+        
+        #Make a new array of components identical to the input, but modify the chemical potential value
+        newcomponents = Array{Component}([])
+        for i in 1:lastindex(comps)
+        push!(newcomponents,Component(comps[i],μ=chempotentials[i]))
+        end
+
+
+        #Make an array of Phase objects with the properties calculated from PerpleX
+        #Iterate through the phaseProperties and connect it with the phase name and composition
+        phasearray = Array{Phase}([])
+        for i in 1:K5
+            #Check to make sure a phase exists at this index by looking at molar volume
+            if phaseproperties[1,i] > 0
+                iphasecomposition = Array{Component}([])
+                iphasename = rstrip(phasenames[(i-1)*MAX_PHASE_NAME_L+1:i*MAX_PHASE_NAME_L])
+                for j in 1:lastindex(comps)
+                    push!(iphasecomposition,Component(comps[j],phasecompositions[j,i]))
+                end
+                #Assign appropriate values from the array, based on comments in perplex code
+                iphase = Phase(name = iphasename, 
+                                composition = iphasecomposition, 
+                                mol = phaseproperties[16,i], 
+                                vol = phaseproperties[16,i]*phaseproperties[1,i], 
+                                mass = phaseproperties[16,i]*phaseproperties[17,i],
+                                ρ =phaseproperties[10,i],
+                                molarmass = phaseproperties[17,i],
+                                G = phaseproperties[11,i],
+                                H =phaseproperties[2,i],
+                                S = phaseproperties[15,i],
+                                Cp = phaseproperties[12,i],
+                                Vmol = phaseproperties[1,i],
+                                Cp_Cv = phaseproperties[28,i],
+                                α = phaseproperties[13,i],
+                                β = phaseproperties[14,i] )
+                push!(phasearray,iphase)
+            end
+        end
+
+        system = PetroSystem(composition = newcomponents,
+                            phases = phasearray,
+                            mol = systemproperties[16],
+                            vol = systemproperties[16]*systemproperties[1],
+                            mass = systemproperties[16]*systemproperties[17],
+                            ρ = systemproperties[10],
+                            molarmass = systemproperties[17],
+                            G = systemproperties[11],
+                            H = systemproperties[2],
+                            S = systemproperties[15],
+                            Cp = systemproperties[12],
+                            Vmol = systemproperties[1],
+                            Cp_Cv = systemproperties[28],
+                            α = systemproperties[13],
+                            β = systemproperties[14])
+        #return compoNames,cPotentials,phaseNames,phaseProps,phaseComps,sysProps
+        return system
+    end
 end
 
 """

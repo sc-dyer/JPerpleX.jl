@@ -118,6 +118,7 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
         temperature += 273 #Convert to K
         componentnames = name.(comps)
         componentstring = ""
+        
         #Convert the array of names into a format readable by fortran
         for name in componentnames
             componentstring *= rpad(name,MAX_COMPONENT_NAME_L)
@@ -133,24 +134,29 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
         phaseproperties = fill(0.0,I8,K5)
         phasecompositions = fill(0.0,K0,K5)
         systemproperties = fill(0.0,I8)
-        
+        componentmass = fill(0.0,K0)
         
         ccall((:__perplexwrap_MOD_minimizepoint,joinpath(@__DIR__,"perplexwrap.so")),
-            Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64}),
+            Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64}),
             componentstring,systemcomposition,pressure,temperature,X,μ1,μ2,suppresswarn,chempotentials,phasenames,phaseproperties,phasecompositions,
-            systemproperties)
+            systemproperties,componentmass)
 
 
         #WARNING!!!!!!! DO NOT CHANGE ANYTHING ABOVE THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
-
         
         #Make a new array of components identical to the input, but modify the chemical potential value
         newcomponents = Array{Component}([])
-        for i in 1:lastindex(comps)
-        push!(newcomponents,Component(comps[i],μ=chempotentials[i]))
+        for i in 1:lastindex(systemcomposition)
+                
+            if systemcomposition[i] > 0
+                #Parse the names assuming constant length of each component name
+                componentname = String(rstrip(componentstring[(i-1)*MAX_COMPONENT_NAME_L+1:i*MAX_COMPONENT_NAME_L]))
+                thiscomponent = Component(componentname,componentmass[i],systemcomposition[i],chempotentials[i])
+                push!(newcomponents,thiscomponent)
+                
+            end
         end
-
-
+        
         #Make an array of Phase objects with the properties calculated from PerpleX
         #Iterate through the phaseProperties and connect it with the phase name and composition
         phasearray = Array{Phase}([])
@@ -159,8 +165,8 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
             if phaseproperties[1,i] > 0
                 iphasecomposition = Array{Component}([])
                 iphasename = rstrip(phasenames[(i-1)*MAX_PHASE_NAME_L+1:i*MAX_PHASE_NAME_L])
-                for j in 1:lastindex(comps)
-                    push!(iphasecomposition,Component(comps[j],phasecompositions[j,i]))
+                for j in 1:lastindex(newcomponents)
+                    push!(iphasecomposition,Component(newcomponents[j],phasecompositions[j,i]))
                 end
                 #Assign appropriate values from the array, based on comments in perplex code
                 iphase = Phase(name = iphasename, 

@@ -39,6 +39,46 @@ using Test
         @test calc_sys.phases[1].name == "cAmph(G)"
         @test calc_sys.phases[1].molarmass ≈  899.28334
         @test calc_sys.phases[1].G ≈ -1.18096964e7
+
+        readcompo = init_meemum("23SD20A/23SD20A_uH2O")
+        SiO2 = Component("SiO2",60.0840,73.9801)
+        Al2O3 = Component("Al2O3",101.9610,8.89559)
+        FeO = Component("FeO",71.8440,3.67942)
+        MgO = Component("MgO",40.3040,1.06316)
+        CaO = Component("CaO",56.0770,2.44288)
+        Na2O = Component("Na2O",61.9790,2.98545)
+        K2O = Component("K2O",94.1960,4.13531)
+        TiO2 = Component("TiO2",79.8660,0.537338)
+        O2 = Component("O2",31.9990,0.422828)
+        testcompo = [SiO2, Al2O3, FeO, MgO, CaO, Na2O, K2O, TiO2, O2]
+
+        for elem in testcompo
+            @test elem ≈ readcompo[findchemical(readcompo,elem)]
+        end
+
+        println("Init test 2 done")
+
+        T = 850
+        P = 9000
+        μ = -320000
+        calc_sys = minimizepoint(readcompo, T, P, μ1 = μ)
+
+        h2o_test = Component("H2O",18.0150,39.1751159,-320000)
+        # Check a few variables to compare with expected output
+        # println(calcSys.phases)
+        syscompo = calc_sys.composition
+        @test h2o_test ≈ syscompo[findchemical(syscompo,h2o_test)]
+        for elem in testcompo
+            @test elem ≈ syscompo[findchemical(syscompo,elem)]
+        end
+        
+        @test round(calc_sys.molarmass,digits=2) ≈ 7132.96
+        @test round(calc_sys.G,sigdigits = 4)  ≈ -9.281e7
+        @test round(calc_sys.S,digits=2) ≈  20590.94
+
+        @test calc_sys.phases[1].name == "Cpx"
+        @test round(calc_sys.phases[1].molarmass,digits=3) ≈  226.007
+        @test round(calc_sys.phases[1].G,sigdigits=5) ≈ -3.0754e6
         
     end
 

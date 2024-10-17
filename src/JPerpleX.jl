@@ -151,7 +151,7 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
             if systemcomposition[i] > 0
                 #Parse the names assuming constant length of each component name
                 componentname = String(rstrip(componentstring[(i-1)*MAX_COMPONENT_NAME_L+1:i*MAX_COMPONENT_NAME_L]))
-                thiscomponent = Component(componentname,componentmass[i],systemcomposition[i],chempotentials[i])
+                thiscomponent = Component(componentname,componentmass[i],systemcomposition[i],μ=chempotentials[i])
                 push!(newcomponents,thiscomponent)
                 
             end
@@ -166,7 +166,7 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
                 iphasecomposition = Array{Component}([])
                 iphasename = rstrip(phasenames[(i-1)*MAX_PHASE_NAME_L+1:i*MAX_PHASE_NAME_L])
                 for j in 1:lastindex(newcomponents)
-                    push!(iphasecomposition,Component(newcomponents[j],phasecompositions[j,i]))
+                    push!(iphasecomposition,Component(newcomponents[j],mol = phasecompositions[j,i]))
                 end
                 #Assign appropriate values from the array, based on comments in perplex code
                 iphase = Phase(name = iphasename, 

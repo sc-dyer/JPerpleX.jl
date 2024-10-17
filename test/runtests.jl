@@ -63,7 +63,7 @@ using Test
         μ = -320000
         calc_sys = minimizepoint(readcompo, T, P, μ1 = μ)
 
-        h2o_test = Component("H2O",18.0150,39.1751159,-320000)
+        h2o_test = Component("H2O",18.0150,39.1751159,μ = -320000)
         # Check a few variables to compare with expected output
         # println(calcSys.phases)
         syscompo = calc_sys.composition

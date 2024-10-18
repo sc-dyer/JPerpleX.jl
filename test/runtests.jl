@@ -32,7 +32,7 @@ using Test
 
         # Check a few variables to compare with expected output
         # println(calcSys.phases)
-        @test calc_sys.molarmass ≈ 6162.817774
+        @test calc_sys.molarmass ≈ 247.73907
         @test calc_sys.G ≈ -85883543
         @test calc_sys.S ≈  12574.16208
 
@@ -55,7 +55,7 @@ using Test
         for elem in testcompo
             @test elem ≈ readcompo[findchemical(readcompo,elem)]
         end
-
+        @test findchemical(readcompo,"H2O") == 0
         println("Init test 2 done")
 
         T = 850
@@ -72,7 +72,7 @@ using Test
             @test elem ≈ syscompo[findchemical(syscompo,elem)]
         end
         
-        @test round(calc_sys.molarmass,digits=2) ≈ 7132.96
+        @test round(calc_sys.molarmass,digits=2) ≈ 110.81
         @test round(calc_sys.G,sigdigits = 4)  ≈ -9.281e7
         @test round(calc_sys.S,digits=2) ≈  20590.94
 

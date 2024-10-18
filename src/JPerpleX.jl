@@ -49,6 +49,11 @@ const PURE_PHASE_NAME_L = 8
 const SOL_PHASE_ABBREV_L = 6
 const VARIABLE_NAME_L = 8
 
+struct Meemum
+    composition::Array{Component}
+    lib
+    is_init::Bool
+end
 is_init::Bool = false
 # const almostgreys = loadcolorscheme(:almostgreys,[Colors.HSV(0,0,0.2),Colors.HSV(0,0,1)])
 """
@@ -115,6 +120,12 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
     else
         #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
         #INPUT variables
+        for i in 1:lastindex(comps)
+            if concentration(comps[i]) ≈ 0
+                comps[i] = Component(comps[i],mol=0.00001)
+            end
+        end
+        
         temperature += 273 #Convert to K
         componentnames = name.(comps)
         componentstring = ""
@@ -159,6 +170,34 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
         
         #Make an array of Phase objects with the properties calculated from PerpleX
         #Iterate through the phaseProperties and connect it with the phase name and composition
+        # 1  - molar volume
+        # 2  - molar enthalpy
+        # 3  - gruneisen thermal parm
+        # 4  - K_S
+        # 5  - Mu_S
+        # 6  - v_phi
+        # 7  - v_p
+        # 8  - v_s
+        # 9  - v_p/v_s
+        # 10 - rho
+        # 11 - G
+        # 12 - cp
+        # 13 - alpha
+        # 14 - beta
+        # 15 - S
+        # 16 - molar amount
+        # 17 - molar weight
+        # 18 - KS_T
+        # 19 - MuS_T
+        # 20 - KS_P
+        # 21 - MuS_P
+        # 22 - vphi_T
+        # 23 - vp_T
+        # 24 - vs_T
+        # 25 - vphi_P
+        # 26 - vs_P
+        # 27 - vp_P
+        # 28 - heat capacity ratio (cp/cv)
         phasearray = Array{Phase}([])
         for i in 1:K5
             #Check to make sure a phase exists at this index by looking at molar volume
@@ -188,18 +227,24 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
             end
         end
 
+        #For some reason the total system properties are actually
+        #Stored in the molar properties such that the sum of mols of phases
+        #adds up to the total mols in the PetroSystem BUT the sum of phase masses and volumes
+        #Add up to the PetroSystem molarmass and molarvolume
+        #So I have assigned volume to be the molar volume and same with mass, while molar volume
+        #and molar mass have been divided by mols 
         system = PetroSystem(composition = newcomponents,
                             phases = phasearray,
                             mol = systemproperties[16],
-                            vol = systemproperties[16]*systemproperties[1],
-                            mass = systemproperties[16]*systemproperties[17],
+                            vol = systemproperties[1],
+                            mass = systemproperties[17],
                             ρ = systemproperties[10],
-                            molarmass = systemproperties[17],
+                            molarmass = systemproperties[17]/systemproperties[16],
                             G = systemproperties[11],
                             H = systemproperties[2],
                             S = systemproperties[15],
                             Cp = systemproperties[12],
-                            Vmol = systemproperties[1],
+                            Vmol = systemproperties[1]/systemproperties[16],
                             Cp_Cv = systemproperties[28],
                             α = systemproperties[13],
                             β = systemproperties[14])

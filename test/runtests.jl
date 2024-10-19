@@ -9,7 +9,8 @@ using Test
     #T
     @testset "Minimization test" begin
 
-        readcompo = init_meemum("bl691_MEEMUM/bl691_MEEMUM")
+        bl691 = init_meemum("bl691_MEEMUM/bl691_MEEMUM")
+        readcompo = getcompo(bl691)
         Na2O = Component("Na2O",61.9790,2.5416)
         MgO = Component("MgO",40.3040,8.110)
         Al2O3 = Component("Al2O3",101.9610,9.2646)
@@ -28,7 +29,7 @@ using Test
         println("Init test done")
         T = 1050-273
         P = 4000
-        calc_sys = minimizepoint(readcompo, T, P)
+        calc_sys = minimizepoint(bl691, T, P)
 
         # Check a few variables to compare with expected output
         # println(calcSys.phases)
@@ -40,7 +41,10 @@ using Test
         @test calc_sys.phases[1].molarmass ≈  899.28334
         @test calc_sys.phases[1].G ≈ -1.18096964e7
 
-        readcompo = init_meemum("23SD20A/23SD20A_uH2O")
+        close_meemum!(bl691)
+
+        h2o_23SD20A = init_meemum("23SD20A/23SD20A_uH2O")
+        readcompo = getcompo(h2o_23SD20A)
         SiO2 = Component("SiO2",60.0840,73.9801)
         Al2O3 = Component("Al2O3",101.9610,8.89559)
         FeO = Component("FeO",71.8440,3.67942)
@@ -61,9 +65,9 @@ using Test
         T = 850
         P = 9000
         μ = -320000
-        calc_sys = minimizepoint(readcompo, T, P, μ1 = μ)
+        calc_sys = minimizepoint(h2o_23SD20A, T, P, μ1 = μ)
 
-        h2o_test = Component("H2O",18.0150,39.1751159,μ = -320000)
+        h2o_test = Component("H2O",18.0150,39.1751259,μ = -320000)
         # Check a few variables to compare with expected output
         # println(calcSys.phases)
         syscompo = calc_sys.composition
@@ -79,7 +83,7 @@ using Test
         @test calc_sys.phases[1].name == "Cpx"
         @test round(calc_sys.phases[1].molarmass,digits=3) ≈  226.007
         @test round(calc_sys.phases[1].G,sigdigits=5) ≈ -3.0754e6
-        
+        close_meemum!(h2o_23SD20A)
     end
 
     @testset "Pseudosection test" begin

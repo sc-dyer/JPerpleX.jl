@@ -9,8 +9,11 @@ $(EXPORTS)
 """
 module JPerpleX
 export 
+    Meemum,
     init_meemum,
     minimizepoint,
+    close_meemum!,
+    getcompo,
     Assemblage,
     PerplexGrid,
     get_pseudosection,
@@ -30,6 +33,7 @@ using
     Statistics,
     DataFrames
 
+import Libdl
 @reexport using PetroBase
 # Write your package code here.
 
@@ -49,9 +53,18 @@ const PURE_PHASE_NAME_L = 8
 const SOL_PHASE_ABBREV_L = 6
 const VARIABLE_NAME_L = 8
 
-struct Meemum
-    composition::Array{Component}
+"""
+$(TYPEDSIGNATURES)
+
+Struct for working with the perplexwrap library. This should be accessed with caution and generally only used
+with functions provided by JPerpleX
+"""
+mutable struct Meemum
+    "The perplexwrap library, use with caution"
     lib
+    "Composition read from datfile"
+    composition::Array{Component}
+    "Indicator that meemum is initialized"
     is_init::Bool
 end
 is_init::Bool = false
@@ -67,14 +80,18 @@ function init_meemum(datfile)
     #Returns list of components with their composition
     filename = datfile
     
+    lib = Libdl.dlopen(joinpath(@__DIR__,"perplexwrap.so"))
+    initfunc = Libdl.dlsym(lib,:__perplexwrap_MOD_initmeemum)
     #Any anticipated output from Fortran has to be put into an array of the same shape
     compositions = fill(0.0,3,K5)
     componentmass = fill(0.0,K0)
     componentnames = rpad("",K5*MAX_COMPONENT_NAME_L)#The array of strings fed from fortran is provided as just a string that will need to be parsed
-    ccall((:__perplexwrap_MOD_initmeemum,joinpath(@__DIR__,"perplexwrap.so")),
-        Cvoid,(Cstring,Ref{Int32}, Cstring, Ref{Float64},Ref{Float64}), 
-        filename, sizeof(filename),componentnames, compositions, componentmass)
+    # ccall((:__perplexwrap_MOD_initmeemum,joinpath(@__DIR__,"perplexwrap.so")),
+    #     Cvoid,(Cstring,Ref{Int32}, Cstring, Ref{Float64},Ref{Float64}), 
+    #     filename, sizeof(filename),componentnames, compositions, componentmass)
     
+    @ccall $initfunc(filename::Cstring,sizeof(filename)::Ref{Int32},
+            componentnames::Cstring,compositions::Ref{Float64},componentmass::Ref{Float64})::Cvoid
     #Iterate through the composition matrix and parse out component names into an array of components
     #Foreseeable issue, if a composition is input with a value of 0, this will break
    
@@ -101,9 +118,8 @@ function init_meemum(datfile)
         end
        
     end
-    global is_init = true
-    return components
-    
+    is_init = true
+    return Meemum(lib,components,is_init)   
 end
 
 
@@ -114,20 +130,20 @@ This is function runs the 'minimizePoint' function in 'perplexwrap.f '
 for the provided composition ('comps') at the given pressure ('pres') and temperature ('temp')  in bars and °C. 
 This will return a PetroSystem.
 """
-function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN, μ1 = NaN, μ2 = NaN)
-    if !is_init
+function minimizepoint(meemum,temperature,pressure; composition = getcompo(meemum), suppresswarn= false, X = NaN, μ1 = NaN, μ2 = NaN)
+    if !meemum.is_init
         throw(ErrorException("You must run init_meemum() before minimizepoint() can be used"))
     else
         #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
         #INPUT variables
-        for i in 1:lastindex(comps)
-            if concentration(comps[i]) ≈ 0
-                comps[i] = Component(comps[i],mol=0.00001)
+        for i in 1:lastindex(composition)
+            if concentration(composition[i]) ≈ 0
+                composition[i] = Component(composition[i],mol=0.00001)
             end
         end
         
         temperature += 273 #Convert to K
-        componentnames = name.(comps)
+        componentnames = name.(composition)
         componentstring = ""
         
         #Convert the array of names into a format readable by fortran
@@ -135,7 +151,7 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
             componentstring *= rpad(name,MAX_COMPONENT_NAME_L)
         end
         componentstring = rpad(componentstring,K5*MAX_COMPONENT_NAME_L)
-        systemcomposition= vcat(concentration.(comps),fill(0.0,K5-length(comps)))
+        systemcomposition= vcat(concentration.(composition),fill(0.0,K5-length(composition)))
         
         #OUTPUT variables
         #Any anticipated output from Fortran has to be put into an array of the same shape
@@ -146,13 +162,16 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
         phasecompositions = fill(0.0,K0,K5)
         systemproperties = fill(0.0,I8)
         componentmass = fill(0.0,K0)
-        
-        ccall((:__perplexwrap_MOD_minimizepoint,joinpath(@__DIR__,"perplexwrap.so")),
-            Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64}),
-            componentstring,systemcomposition,pressure,temperature,X,μ1,μ2,suppresswarn,chempotentials,phasenames,phaseproperties,phasecompositions,
-            systemproperties,componentmass)
 
+        minimize = Libdl.dlsym(meemum.lib,:__perplexwrap_MOD_minimizepoint)
+        # ccall((:__perplexwrap_MOD_minimizepoint,joinpath(@__DIR__,"perplexwrap.so")),
+        #     Cvoid,(Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Ref{Bool},Ref{Float64},Cstring,Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64}),
+        #     componentstring,systemcomposition,pressure,temperature,X,μ1,μ2,suppresswarn,chempotentials,phasenames,phaseproperties,phasecompositions,
+        #     systemproperties,componentmass)
 
+        @ccall $minimize(componentstring::Cstring, systemcomposition::Ref{Float64},pressure::Ref{Float64},temperature::Ref{Float64},
+                X::Ref{Float64}, μ1::Ref{Float64},μ2::Ref{Float64},suppresswarn::Ref{Bool},chempotentials::Ref{Float64},phasenames::Cstring,
+                phaseproperties::Ref{Float64},phasecompositions::Ref{Float64},systemproperties::Ref{Float64},componentmass::Ref{Float64})::Cvoid
         #WARNING!!!!!!! DO NOT CHANGE ANYTHING ABOVE THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
         
         #Make a new array of components identical to the input, but modify the chemical potential value
@@ -253,6 +272,14 @@ function minimizepoint(comps,temperature,pressure; suppresswarn= false, X = NaN,
     end
 end
 
+function close_meemum!(meemum)
+    Libdl.dlclose(meemum.lib)
+    meemum.is_init = false
+end
+
+function getcompo(meemum)
+    return meemum.composition
+end
 """
 $(SIGNATURES)
 This is a simple type defined to keep track of the phases present at each x and y coordinate in a 'PerplexGrid'. 

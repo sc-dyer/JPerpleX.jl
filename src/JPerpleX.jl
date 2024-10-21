@@ -136,9 +136,13 @@ function minimizepoint(meemum,temperature,pressure; composition = getcompo(meemu
     else
         #WARNING!!!!!!! DO NOT CHANGE ANYTHING BELOW THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
         #INPUT variables
-        for i in 1:lastindex(composition)
-            if concentration(composition[i]) ≈ 0
-                composition[i] = Component(composition[i],mol=0.00001)
+        
+        datcompo = getcompo(meemum)
+        #Verify that composition has all componeents defined in the datfile
+        for comp in datcompo
+            index = findchemical(composition, comp)
+            if index == 0
+                push!(composition,Component(comp,mol=0.0))
             end
         end
         

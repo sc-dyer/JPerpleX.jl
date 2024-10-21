@@ -1,7 +1,6 @@
 #Tests adapted from main Perple_X repo
 using JPerpleX
 using CairoMakie
-
 using Test
 
 @testset "JPerplex.jl" begin
@@ -84,6 +83,50 @@ using Test
         @test round(calc_sys.phases[1].molarmass,digits=3) ≈  226.007
         @test round(calc_sys.phases[1].G,sigdigits=5) ≈ -3.0754e6
         close_meemum!(h2o_23SD20A)
+
+        #Testing meemum on files used in Migmatites.jl tests
+        hostlib = init_meemum("23SD20A_melt-test1/Host")
+        host = minimizepoint(hostlib,800,9000,μ1 = -316240)
+    
+        hosth2o = getchemical(host.composition,"H2O")
+    
+        @test round(hosth2o.mol,digits=3) ≈ 0.414
+        @test round(hosth2o.μ,sigdigits = 6) ≈ -316240
+        @test round(host.phases[1].vol/host.vol*100,digits=2) ≈ 5.15
+        close_meemum!(hostlib)
+
+        sourcelib = init_meemum("23SD20A_melt-test1/MeltSource")
+        source = minimizepoint(sourcelib,875,10000)
+        sourcemelt = getphase(source,"melt")
+        sourcemelth2o= getchemical(sourcemelt.composition,"H2O")
+        @test round(sourcemelth2o.mol,digits=5) ≈ 0.40999
+        @test round(sourcemelt.vol/source.vol * 100,digits=2) ≈ 6.89
+        
+        melt = minimizepoint(sourcelib,800,9000,composition=sourcemelt.composition)
+        melth2o = getchemical(melt.composition,"H2O")
+        @test round(melth2o.μ,sigdigits=6) ≈ -316239
+        @test round(melth2o.mol,digits=5) ≈ 0.40999
+
+        close_meemum!(sourcelib)
+
+        meltlib = init_meemum("23SD20A_melt-test1/Melt")
+        melt = minimizepoint(meltlib,800,9000,composition=sourcemelt.composition)
+        melth2o = getchemical(melt.composition,"H2O")
+        @test round(melth2o.μ,sigdigits=6) ≈ -316240
+        @test round(melth2o.mol,digits=5) ≈ 0.40999
+        close_meemum!(meltlib)
+
+        hostlib = init_meemum("23SD20A_melt-test1/Host")
+        host = minimizepoint(hostlib,800,9000,μ1 = -316240)
+    
+        hosth2o = getchemical(host.composition,"H2O")
+    
+        @test round(hosth2o.mol,digits=3) ≈ 0.414
+        @test round(hosth2o.μ,sigdigits = 6) ≈ -316240
+        @test round(host.phases[1].vol/host.vol*100,digits=2) ≈ 5.15
+        close_meemum!(hostlib)
+
+        
     end
 
     @testset "Pseudosection test" begin

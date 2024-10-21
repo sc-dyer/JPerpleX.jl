@@ -1,0 +1,82 @@
+hp633verD.dat     thermodynamic data file                                                                                                   
+print    | no_print suppresses print output
+plot     | obsolete 6.8.4+
+solution_model.dat     | solution model file, blank = none                                                                                                                                                                                                      
+23SD20A_melt                                                                                                                                                                                                                                                      
+perplex_option.dat     | Perple_X option file                                                                                                                                                                                                                   
+    5 calculation type: 0- composition, 1- Schreinemakers, 3- Mixed, 4- swash, 5- gridded min, 7- 1d fract, 8- gwash, 9- 2d fract, 10- 7 w/file input, 11- 9 w/file input, 12- 0d infiltration
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 number component transformations
+   20 number of components in the data base
+    0 component amounts, 0 - mole, 1 mass
+    0 unused place holder, post 06
+    0 unused place holder, post 06
+    0 unused place holder, post 05
+    5 ifug EoS for saturated phase
+    2 gridded minimization dimension (1 or 2)
+    0 special dependencies: 0 - P and T independent, 1 - P(T), 2 - T(P)
+ 0.00000      0.00000      0.00000      0.00000      0.00000     Geothermal gradient polynomial coeffs.
+
+begin thermodynamic component list
+SiO2  1  1.80870      1.80870      0.00000     molar amount
+Al2O3 1  0.23009      0.23009      0.00000     molar amount
+FeO   1  0.03100      0.03100      0.00000     molar amount
+MgO   1  0.00788      0.00788      0.00000     molar amount
+CaO   1  0.06827      0.06827      0.00000     molar amount
+Na2O  1  0.06962      0.06962      0.00000     molar amount
+K2O   1  0.09624      0.09624      0.00000     molar amount
+H2O   1 0.40998       0.40998      0.00000     molar amount
+end thermodynamic component list
+
+
+begin saturated component list
+end saturated component list
+
+
+begin saturated phase component list
+end saturated phase component list
+
+
+begin independent potential/fugacity/activity list
+end independent potential list
+
+
+begin excluded phase list  
+ilm     
+ilm_nol 
+hem_nol 
+hem       
+andr
+end excluded phase list
+
+
+begin solution phase list
+cAmph(G)  
+Mica(W)
+Ep(HP11)
+Chl(W)
+Augite(G) 
+melt(G)     
+Opx(W)            
+Ilm(DS6)  
+Sp(WPC)
+Bi(W)
+O(HP)
+Gt(W)
+Fsp(C1)
+end solution phase list
+
+   14000.00        1223.00        0.00000        0.00000        0.00000     max p, t, xco2, mu_1, mu_2
+   2000.00        723.000        0.00000        0.00000        0.00000     min p, t, xco2, mu_1, mu_2
+   0.00000        0.00000        0.00000        0.00000        0.00000     unused place holder post 06
+
+ 2  1  4  5  3   indices of 1st & 2nd independent & sectioning variables
+

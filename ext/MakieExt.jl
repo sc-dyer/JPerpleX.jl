@@ -160,9 +160,4 @@ function Makie.get_plots(plot::PhaseMode)
     return plot.plots
 end
 
-# function Makie.legendelements(plot::PhaseMode,legend)::Vector{LegendElement}
-
-#     elems = [legendelements(p) for p in plot.plots]
-#     return elems
-# end
 end

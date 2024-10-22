@@ -26,7 +26,9 @@ export
     pseudosection,
     pseudosection!,
     output_assemblages,
-    read_werami_output
+    read_werami_output,
+    phasemode,
+    phasemode!
 using
     DocStringExtensions,
     Reexport,
@@ -52,7 +54,7 @@ const MAX_PHASE_NAME_L = 14
 const PURE_PHASE_NAME_L = 8
 const SOL_PHASE_ABBREV_L = 6
 const VARIABLE_NAME_L = 8
-
+const MIN_MOL = 0.0001
 """
 $(TYPEDSIGNATURES)
 
@@ -142,7 +144,13 @@ function minimizepoint(meemum,temperature,pressure; composition = getcompo(meemu
         for comp in datcompo
             index = findchemical(composition, comp)
             if index == 0
-                push!(composition,Component(comp,mol=0.0))
+                push!(composition,Component(comp,mol=MIN_MOL))
+            end
+        end
+
+        for i in 1:lastindex(composition)
+            if mol(composition[i]) ≈ 0
+                composition[i] = Component(composition[i],mol=MIN_MOL)
             end
         end
         
@@ -685,4 +693,6 @@ end
 
 function pseudosection end
 function pseudosection! end
+function phasemode end
+function phasemode! end
 end

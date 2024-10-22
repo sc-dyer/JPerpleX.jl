@@ -132,7 +132,10 @@ This is function runs the 'minimizePoint' function in 'perplexwrap.f '
 for the provided composition ('comps') at the given pressure ('pres') and temperature ('temp')  in bars and °C. 
 This will return a PetroSystem.
 """
-function minimizepoint(meemum,temperature,pressure; composition = getcompo(meemum), suppresswarn= false, X = NaN, μ1 = NaN, μ2 = NaN)
+function minimizepoint(meemum,temperature,pressure; composition = getcompo(meemum), suppresswarn= false, X = NaN, μ1 = NaN, μ2 = NaN,phasefunc = [])
+    #Maybe introduce an optional argument that can have a function passed into it
+    #This function can then be used to define specific phases
+
     if !meemum.is_init
         throw(ErrorException("You must run init_meemum() before minimizepoint() can be used"))
     else
@@ -254,6 +257,12 @@ function minimizepoint(meemum,temperature,pressure; composition = getcompo(meemu
                                 Cp_Cv = phaseproperties[28,i],
                                 α = phaseproperties[13,i],
                                 β = phaseproperties[14,i] )
+                
+                if length(phasefunc) > 0
+                    for f in phasefunc
+                        iphase = f(iphase)
+                    end
+                end
                 push!(phasearray,iphase)
             end
         end
@@ -687,6 +696,7 @@ function read_werami_output(filename; iscelsius = false, iskbar = false)
     
     return df
 end
+
 
 
 #Generic functions for plotting extensions

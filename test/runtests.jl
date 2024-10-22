@@ -171,15 +171,34 @@ using Test
     end
 
     @testset "PhaseMode test" begin
+
+        #Parameter functions for phase imports
+
+        function feldspar_conditions(phase)
+            if lowercase(phase.name) == "fsp"
+                k2o = getchemical(phase.composition,"K2O")
+                na2o = getchemical(phase.composition,"Na2O")
+                cao = getchemical(phase.composition,"CaO")
+            
+                if mol(k2o*2) >0.1
+                    return changename(phase,"Afs")
+                else
+                    return changename(phase,"Pl")
+                end
+            else
+                return phase
+            end
+        end
+
         sourcelib = init_meemum("23SD20A_melt-test1/MeltSource")
         trange = range(800,900,length=10)
-        sources = [minimizepoint(sourcelib,t,10000) for t in trange]
+        sources = [minimizepoint(sourcelib,t,10000,phasefunc = [feldspar_conditions]) for t in trange]
 
         fig = Figure(size = (600,450))
         ax = Axis(fig[1,1])
     
         phasemode!(ax,trange,sources)
-        fig[1,2] = Legend(fig,ax)
+        # fig[1,2] = Legend(fig,ax)
         save("23SD20A_melt-test1/Sources.svg",fig)
     end
 end

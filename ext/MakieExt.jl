@@ -8,8 +8,9 @@ using
     Statistics,
     DocStringExtensions
     
-import JPerpleX: pseudosection, pseudosection!
+import JPerpleX: pseudosection, pseudosection!, phasemode, phasemode!
 
+const MIN_PROP = 0.01
 """
 $(TYPEDSIGNATURES)
 
@@ -17,7 +18,7 @@ Plot recipe to make a pseudosection from a 'PerplexGrid'. These will be plotted 
 can still be edited with a vector graphics editor. Fields are labeled by assemblage key, a list of unique 
 assemblages can be retrieved with 'unique_assemblages' or they can be printed to a text file with 'output_assemblages'. 
 """
-@recipe(Pseudosection) do scene
+@recipe(Pseudosection,perplexgrid) do scene
     Attributes(
         colormap = [Colors.HSV(0,0,0.2),Colors.HSV(0,0,1)],
         linewidth = 2,
@@ -37,7 +38,7 @@ function Makie.plot!(pseudo::Pseudosection)
     
   
 
-    pgrid = pseudo[1][]
+    pgrid = pseudo.perplexgrid[]
     xs = x.(pgrid.assemblages)
     ys = y.(pgrid.assemblages)
 
@@ -91,4 +92,73 @@ function Makie.plot!(pseudo::Pseudosection)
     # pseudo.limits = (xmin,xmax,ymin,ymax)
 end
 
+@recipe(PhaseMode,x,petrosystems) do scene
+    Attributes(
+        linewidth = 1,
+        linecolor = :black,
+        colormap =  Makie.wong_colors()
+    )
+end
+
+
+function Makie.plot!(phasemode::PhaseMode)
+    
+    petrosystems = phasemode.petrosystems[]
+
+    #Start by building the arrays, need to see every phase present
+    phaselist = String[]
+    count = 1
+    for sys in petrosystems
+        @show count
+        for phase in sys.phases
+            @show phase.name, phase.vol
+            if !any(contains.(phaselist,phase.name))&& get_volprop(sys,phase.name) >= MIN_PROP
+                push!(phaselist,phase.name)
+            end
+        end
+        count += 1
+    end
+
+    volprops = nothing
+
+    for name in phaselist
+        @show name
+        proportion = Float64[]
+        for sys in petrosystems
+            @show get_volprop(sys,name)
+            push!(proportion,get_volprop(sys,name))
+        end
+        if isnothing(volprops)
+            volprops = proportion
+        else
+            volprops = [volprops proportion]
+        end
+    end
+    
+    propcum = cumsum(volprops,dims=2)
+    @show phaselist
+    @show volprops
+    @show propcum
+
+    for i in axes(propcum,2)
+        colorindex = i
+        if colorindex > lastindex(phasemode.colormap[])
+            colorindex = i%lastindex(phasemode.colormap[])
+            if colorindex == 0
+                colorindex = lastindex(phasemode.colormap[])
+            end
+        end
+        if i == 1
+            band!(phasemode,phasemode.x,0,propcum[:,i],color=phasemode.colormap[][colorindex],label = phaselist[i])
+        else
+            band!(phasemode,phasemode.x,propcum[:, i-1],propcum[:,i],color=phasemode.colormap[][colorindex],label = phaselist[i])
+        end
+        @show propcum[:,i]
+        lines!(phasemode.x,propcum[:,i],linewidth = phasemode.linewidth,color = phasemode.linecolor)
+    end
+end
+
+function Makie.legendelements(plot::PhaseMode,legend)::Vector{LegendElement}
+
+end
 end

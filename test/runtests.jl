@@ -198,7 +198,7 @@ using Test
         ax = Axis(fig[1,1])
     
         phasemode!(ax,trange,sources)
-        # fig[1,2] = Legend(fig,ax)
+        fig[1,2] = Legend(fig,ax)
         save("23SD20A_melt-test1/Sources.svg",fig)
     end
 end

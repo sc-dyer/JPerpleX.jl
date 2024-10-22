@@ -97,15 +97,15 @@ using Test
 
         sourcelib = init_meemum("23SD20A_melt-test1/MeltSource")
         source = minimizepoint(sourcelib,875,10000)
-        sourcemelt = getphase(source,"melt")
+        sourcemelt = getphase(source,"melt")[1]
         sourcemelth2o= getchemical(sourcemelt.composition,"H2O")
         @test round(sourcemelth2o.mol,digits=5) ≈ 0.40999
         @test round(sourcemelt.vol/source.vol * 100,digits=2) ≈ 6.89
         
-        melt = minimizepoint(sourcelib,800,9000,composition=sourcemelt.composition)
+        melt = minimizepoint(sourcelib,800,9000,composition=sourcemelt.composition.*100)
         melth2o = getchemical(melt.composition,"H2O")
         @test round(melth2o.μ,sigdigits=6) ≈ -316239
-        @test round(melth2o.mol,digits=5) ≈ 0.40999
+        @test round(melth2o.mol,digits=3) ≈ 40.999
 
         close_meemum!(sourcelib)
 
@@ -168,5 +168,18 @@ using Test
         save("klb691/klb691.svg",fig)
         @test filesize("klb691/klb691.svg") ≈ filesize("klb691/output/klb691.svg")
         
+    end
+
+    @testset "PhaseMode test" begin
+        sourcelib = init_meemum("23SD20A_melt-test1/MeltSource")
+        trange = range(800,900,length=10)
+        sources = [minimizepoint(sourcelib,t,10000) for t in trange]
+
+        fig = Figure(size = (600,450))
+        ax = Axis(fig[1,1])
+    
+        phasemode!(ax,trange,sources)
+        fig[1,2] = Legend(fig,ax)
+        save("23SD20A_melt-test1/Sources.svg",fig)
     end
 end

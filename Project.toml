@@ -4,9 +4,11 @@ authors = ["Sabastien Dyer <scdyer@uwaterloo.ca> and contributors"]
 version = "1.0.0-DEV"
 
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 PetroBase = "b72d3798-c150-44c4-b6d4-c983c975f217"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
@@ -19,5 +21,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 MakieExt = ["Makie"]
 
 [compat]
+CairoMakie = "0.12.14"
+GLMakie = "0.10.14"
 Libdl = "1.11.0"
 julia = "1"

@@ -9,7 +9,7 @@ using
     DocStringExtensions
     
 import JPerpleX: pseudosection, pseudosection!, phasemode, phasemode!
-
+# import Makie: legendelements
 const MIN_PROP = 0.01
 """
 $(TYPEDSIGNATURES)
@@ -109,9 +109,9 @@ function Makie.plot!(phasemode::PhaseMode)
     phaselist = String[]
     count = 1
     for sys in petrosystems
-        @show count
+  
         for phase in sys.phases
-            @show phase.name, phase.vol
+           
             if !any(contains.(phaselist,phase.name))&& get_volprop(sys,phase.name) >= MIN_PROP
                 push!(phaselist,phase.name)
             end
@@ -122,10 +122,10 @@ function Makie.plot!(phasemode::PhaseMode)
     volprops = nothing
 
     for name in phaselist
-        @show name
+  
         proportion = Float64[]
         for sys in petrosystems
-            @show get_volprop(sys,name)
+       
             push!(proportion,get_volprop(sys,name))
         end
         if isnothing(volprops)
@@ -136,9 +136,7 @@ function Makie.plot!(phasemode::PhaseMode)
     end
     
     propcum = cumsum(volprops,dims=2)
-    @show phaselist
-    @show volprops
-    @show propcum
+   
 
     for i in axes(propcum,2)
         colorindex = i
@@ -153,12 +151,14 @@ function Makie.plot!(phasemode::PhaseMode)
         else
             band!(phasemode,phasemode.x,propcum[:, i-1],propcum[:,i],color=phasemode.colormap[][colorindex],label = phaselist[i])
         end
-        @show propcum[:,i]
+  
         lines!(phasemode.x,propcum[:,i],linewidth = phasemode.linewidth,color = phasemode.linecolor)
     end
 end
 
-function Makie.legendelements(plot::PhaseMode,legend)::Vector{LegendElement}
+# function Makie.legendelements(plot::PhaseMode,legend)::Vector{LegendElement}
 
-end
+#     elems = [legendelements(p) for p in plot.plots]
+#     return elems
+# end
 end

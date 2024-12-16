@@ -27,8 +27,8 @@ export
     pseudosection!,
     output_assemblages,
     read_werami_output,
-    phasemode,
-    phasemode!
+    modebox,
+    modebox!
 using
     DocStringExtensions,
     Reexport,
@@ -423,14 +423,21 @@ function get_pseudosection(datfile; iscelsius = false, iskbar = false)
     xvariable = rpad("",VARIABLE_NAME_L)
     yvariable= rpad("",VARIABLE_NAME_L)
 
-    ccall((:__perplexwrap_MOD_pseudosection,joinpath(@__DIR__,"perplexwrap.so")),
-        Cvoid,(Cstring,Ref{Int32},Ref{Int32},Ref{Int32},Ref{Int32},Cstring,Cstring,Ref{Int32},Ref{Float64},Ref{Float64},
-        Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Cstring,Cstring),
-        filename,sizeof(filename),grid,grid2assemblage,assemblage2phase,purephases,solutionphases,numphases,
-        xmin,xmax,ymin,ymax,xincrement,yincrement,xvariable,yvariable)
+    lib = Libdl.dlopen(joinpath(@__DIR__,"perplexwrap.so"))
+    pseudosection = Libdl.dlsym(lib,:__perplexwrap_MOD_pseudosection)
+    @ccall $pseudosection(filename::Cstring,sizeof(filename)::Ref{Int32},grid::Ref{Int32},grid2assemblage::Ref{Int32},
+                            assemblage2phase::Ref{Int32},purephases::Cstring,solutionphases::Cstring,numphases::Ref{Int32},
+                            xmin::Ref{Float64},xmax::Ref{Float64},ymin::Ref{Float64},ymax::Ref{Float64},xincrement::Ref{Float64},
+                            yincrement::Ref{Float64},xvariable::Cstring, yvariable::Cstring)::Cvoid
+    # ccall((:__perplexwrap_MOD_pseudosection,joinpath(@__DIR__,"perplexwrap.so")),
+    #     Cvoid,(Cstring,Ref{Int32},Ref{Int32},Ref{Int32},Ref{Int32},Cstring,Cstring,Ref{Int32},Ref{Float64},Ref{Float64},
+    #     Ref{Float64},Ref{Float64},Ref{Float64},Ref{Float64},Cstring,Cstring),
+    #     filename,sizeof(filename),grid,grid2assemblage,assemblage2phase,purephases,solutionphases,numphases,
+    #     xmin,xmax,ymin,ymax,xincrement,yincrement,xvariable,yvariable)
 
     #WARNING!!!!!!! DO NOT CHANGE ANYTHING ABOVE THIS COMMENT IF YOU DO NOT KNOW WHAT YOU ARE DOING
     #Converting to just floats because i dont wanna type the extra "[1]"
+    
     xmin = xmin[1]
     xmax = xmax[1]
     xincrement = xincrement[1]
@@ -472,24 +479,29 @@ function get_pseudosection(datfile; iscelsius = false, iskbar = false)
     phasename = rstrip(purephases[1:PURE_PHASE_NAME_L])
     purephase_array = Array{String}([])
     count = 1
+   
     while length(phasename) > 0 && count*PURE_PHASE_NAME_L < length(purephases)
         push!(purephase_array,phasename)
         firstindex= count*PURE_PHASE_NAME_L+1
         lastindex = (count+1)*PURE_PHASE_NAME_L
         phasename = rstrip(purephases[firstindex:lastindex])
         count += 1
+        
+        
     end
 
     #Convert solPhases to list of strings
     phasename = rstrip(solutionphases[1:SOL_PHASE_ABBREV_L-1])
     solutionphase_array = Array{String}([])
     count = 1
+    
     while length(phasename) > 0 && count*SOL_PHASE_ABBREV_L < length(solutionphases)
         push!(solutionphase_array,phasename)
         firstindex = count*SOL_PHASE_ABBREV_L+1
         lastindex = (count+1)*SOL_PHASE_ABBREV_L
         phasename = rstrip(solutionphases[firstindex:lastindex])
         count += 1
+        
     end
 
 
@@ -523,7 +535,7 @@ function get_pseudosection(datfile; iscelsius = false, iskbar = false)
         end
 
     end
-    
+  
     return PerplexGrid(gridded_assemblage,rstrip(xvariable),rstrip(yvariable))
 end
 
@@ -703,6 +715,6 @@ end
 
 function pseudosection end
 function pseudosection! end
-function phasemode end
-function phasemode! end
+function modebox end
+function modebox! end
 end

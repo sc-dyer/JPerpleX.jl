@@ -8,7 +8,7 @@ using
     Statistics,
     DocStringExtensions
     
-import JPerpleX: pseudosection, pseudosection!, phasemode, phasemode!
+import JPerpleX: pseudosection, pseudosection!, modebox, modebox!
 # import Makie: legendelements
 const MIN_PROP = 0.01
 """
@@ -65,7 +65,9 @@ function Makie.plot!(pseudo::Pseudosection)
     #This part plots a filled contour around each unique assemblage
     #Ranges of the levels and colormaps are based on trial and error, do not change them
     #They should be roughly halfway beetween grid points in a smoothed line
+   
     for i in range(1,lastindex(present_assemblages))
+        
         colorvalue = 1-(length(present_assemblages[i].phases)-min_phasevariance)/(max_phasevariance-min_phasevariance)
         contourf!(pseudo,xs,ys,filterkeys(pgrid.assemblages,i),levels =-0.5:1:1.5,
         colormap = [:transparent,get(colorramp,colorvalue)])
@@ -79,7 +81,9 @@ function Makie.plot!(pseudo::Pseudosection)
         text!(pseudo,mean(x.(igrid)),mean(y.(igrid)),text = string(i),fontsize = pseudo.labelfontsize)
     end
     #Making the contours seperate so they can be selected easily in post-processing
+    
     for i in range(1,lastindex(present_assemblages))
+       
         # println(string(uniqueAsms[i].key)*" = "*join(uniqueAsms[i].phases," "))
         contour!(pseudo,xs,ys,filterkeys(pgrid.assemblages,i),levels =-0.5:1:1.5,colormap = [:transparent,pseudo.linecolor[],pseudo.linecolor[]],linewidth=pseudo.linewidth)
     end
@@ -92,7 +96,7 @@ function Makie.plot!(pseudo::Pseudosection)
     # pseudo.limits = (xmin,xmax,ymin,ymax)
 end
 
-@recipe(PhaseMode,x,petrosystems) do scene
+@recipe(ModeBox,x,petrosystems) do scene
     Attributes(
         linewidth = 1,
         linecolor = :black,
@@ -101,9 +105,9 @@ end
 end
 
 
-function Makie.plot!(phasemode::PhaseMode)
+function Makie.plot!(modebox::ModeBox)
     
-    petrosystems = phasemode.petrosystems[]
+    petrosystems = modebox.petrosystems[]
 
     #Start by building the arrays, need to see every phase present
     phaselist = String[]
@@ -140,23 +144,23 @@ function Makie.plot!(phasemode::PhaseMode)
 
     for i in axes(propcum,2)
         colorindex = i
-        if colorindex > lastindex(phasemode.colormap[])
-            colorindex = i%lastindex(phasemode.colormap[])
+        if colorindex > lastindex(modebox.colormap[])
+            colorindex = i%lastindex(modebox.colormap[])
             if colorindex == 0
-                colorindex = lastindex(phasemode.colormap[])
+                colorindex = lastindex(modebox.colormap[])
             end
         end
         if i == 1
-            band!(phasemode,phasemode.x,0,propcum[:,i],color=phasemode.colormap[][colorindex],label = phaselist[i])
+            band!(modebox,modebox.x,0,propcum[:,i],color=modebox.colormap[][colorindex],label = phaselist[i])
         else
-            band!(phasemode,phasemode.x,propcum[:, i-1],propcum[:,i],color=phasemode.colormap[][colorindex],label = phaselist[i])
+            band!(modebox,modebox.x,propcum[:, i-1],propcum[:,i],color=modebox.colormap[][colorindex],label = phaselist[i])
         end
   
-        lines!(phasemode.x,propcum[:,i],linewidth = phasemode.linewidth,color = phasemode.linecolor)
+        lines!(modebox.x,propcum[:,i],linewidth = modebox.linewidth,color = modebox.linecolor)
     end
 end
 
-function Makie.get_plots(plot::PhaseMode)
+function Makie.get_plots(plot::ModeBox)
     return plot.plots
 end
 

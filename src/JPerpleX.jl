@@ -13,11 +13,11 @@ export
     init_meemum,
     minimizepoint,
     close_meemum!,
-    getcompo,
     Assemblage,
     PerplexGrid,
     get_pseudosection,
     unique_assemblages,
+    getcompo,
     x,
     y,
     key,
@@ -298,8 +298,8 @@ function close_meemum!(meemum)
     meemum.is_init = false
 end
 
-function getcompo(meemum)
-    return meemum.composition
+function PetroBase.getcompo(meemum::Meemum;col=1)
+    return meemum.composition[:,col]
 end
 """
 $(SIGNATURES)

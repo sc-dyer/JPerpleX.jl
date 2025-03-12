@@ -100,13 +100,14 @@ end
     Attributes(
         linewidth = 1,
         linecolor = :black,
-        colormap =  Makie.wong_colors()
+        colormap =  :lighttest,
+        colorreference = nothing,
     )
 end
 
 
 function Makie.plot!(modebox::ModeBox)
-    
+    plotcolors = to_colormap(modebox.colormap[])
     petrosystems = modebox.petrosystems[]
 
     #Start by building the arrays, need to see every phase present
@@ -143,17 +144,21 @@ function Makie.plot!(modebox::ModeBox)
    
 
     for i in axes(propcum,2)
+
         colorindex = i
-        if colorindex > lastindex(modebox.colormap[])
-            colorindex = i%lastindex(modebox.colormap[])
+        if !isnothing(modebox.colorreference[])
+            colorindex = modebox.colorreference[][phaselist[i]]
+        end
+        if colorindex > lastindex(plotcolors)
+            colorindex = i%lastindex(plotcolors)
             if colorindex == 0
-                colorindex = lastindex(modebox.colormap[])
+                colorindex = lastindex(plotcolors)
             end
         end
         if i == 1
-            band!(modebox,modebox.x,0,propcum[:,i],color=modebox.colormap[][colorindex],label = phaselist[i])
+            band!(modebox,modebox.x,0,propcum[:,i],color=plotcolors[colorindex],label = phaselist[i])
         else
-            band!(modebox,modebox.x,propcum[:, i-1],propcum[:,i],color=modebox.colormap[][colorindex],label = phaselist[i])
+            band!(modebox,modebox.x,propcum[:, i-1],propcum[:,i],color=plotcolors[colorindex],label = phaselist[i])
         end
   
         lines!(modebox.x,propcum[:,i],linewidth = modebox.linewidth,color = modebox.linecolor)

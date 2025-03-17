@@ -170,6 +170,42 @@ using Test
         
     end
 
+    @testset "Werami test" begin
+        function feldspar_conditions(phase)
+            if lowercase(phase.name) == "fsp"
+                k2o = getchemical(phase.composition,"K2O")
+                na2o = getchemical(phase.composition,"Na2O")
+                cao = getchemical(phase.composition,"CaO")
+            
+                if mol(k2o*2) >0.1
+                    return changename(phase,"Afs")
+                else
+                    return changename(phase,"Pl")
+                end
+            else
+                return phase
+            end
+        end
+
+        wdf, xvar, yvar = read_werami_output("20SD06_R2c_1_trimmed.phm", iscelsius = true, iskbar = true)
+
+        petrodf = werami_to_petrosys(wdf,xvar, yvar, phasefunc = [feldspar_conditions])
+
+        petrodfrows = eachrow(petrodf)
+
+        testrow = petrodfrows[1]
+        @test testrow[1] == 723 - 273.15
+        @test testrow[2] == 2000.0/1000.0
+        @test length(petrodfrows) == 180
+        psys = testrow[3]
+        @test length(psys.phases) == 9
+        
+        @test round(get_volprop(psys,"Cpx")*100,digits=2) ≈ 3.06 
+
+        
+    end
+
+    
     @testset "ModeBox test" begin
 
         #Parameter functions for phase imports

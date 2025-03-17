@@ -27,6 +27,7 @@ export
     pseudosection!,
     output_assemblages,
     read_werami_output,
+    werami_to_petrosys,
     modebox,
     modebox!
 using
@@ -663,54 +664,177 @@ function read_werami_output(filename; iscelsius = false, iskbar = false)
 
     readfile = open(filename,"r")
     lines = readlines(readfile)
-
+    xvar = rstrip(lines[4])
+    yvar = rstrip(lines[8])
     #Assumes a specific file structure with variable headings at line 13
     headings = split(lines[13])
     #Set up arrays to read into
-    xs = Array{Float64}([])
-    ys = Array{Float64}([])
-    variables = Array{Array{Float64}}([])
-    for i in range(3,lastindex(headings))
+    variables = []
+    for i in range(1,lastindex(headings))
         push!(variables,[])
     end
 
     #Parsing out the data
     for i in range(14,lastindex(lines))
         vals= split(lines[i])
-        push!(xs,parse(Float64,vals[1]))
-        push!(ys,parse(Float64,vals[2]))
-
-        for j in range(3,lastindex(vals))
-            val = parse(Float64,vals[j])
-            if isnan(val)
+        for j in range(1,lastindex(vals))
+            val = tryparse(Float64,vals[j])
+            if isnothing(val)
+                val = vals[j]
+            elseif isnan(val)
                 val = 0.0 #Problems when plotting with NaN with contours
             end
-            push!(variables[j-2],val)
+            push!(variables[j],val)
         end
     end
 
     #Put it all in a DataFrame
-    df = DataFrame(headings[1]=>xs,headings[2]=>ys)
-    for i in range(3,lastindex(headings))
+    df = DataFrame()
+    for i in range(1,lastindex(headings))
         
-        df[:,Symbol(headings[i])] = variables[i-2]
+        df[:,headings[i]] = variables[i]
     end
 
     if iscelsius && hasproperty(df,"T(K)")
-        rename!(df,Symbol("T(K)") => "T(°C)")
-        df[!,Symbol("T(°C)")] .-= 273.15
+        rename!(df,"T(K)" => "T(°C)")
+        df[!,"T(°C)"] .-= 273.15
+        if xvar == "T(K)"
+            xvar =  "T(°C)"
+        elseif yvar == "T(K)"
+            yvar = "T(°C)"
+        end
+
     end
 
     if iskbar && hasproperty(df,"P(bar)")
-        rename!(df,Symbol("P(bar)") => "P(kbar)")
-        df[!,Symbol("P(kbar)")] ./= 1000
+        rename!(df,"P(bar)" => "P(kbar)")
+        df[!,"P(kbar)"] ./= 1000
+        if xvar == "P(bar)"
+            xvar =  "P(kbar)"
+        elseif yvar == "P(bar)"
+            yvar = "P(kbar)"
+        end
     end
     
-    return df
+    return df, xvar, yvar
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Processes the dataframe output from 'read_werami_output' into a list of 'PetroSystem' objects. This only works if your werami
+file outputted all system and phase data (i.e. it is a .phm file).
+"""
+function werami_to_petrosys(wdf, xvar, yvar;phasefunc = [])
+
+    headers = names(wdf)
+    components = Component[]
+
+    for name in headers
+        if contains(name,",mol,pfu")
+            elemname = split(name,",")[1]
+
+            push!(components,Component(elemname,MOLAR_MASSES[elemname],0))
+        end
+    end
+    
+    subwdfs = groupby(wdf,[xvar,yvar])
+
+    newdf = DataFrame(T = Float64[],P = Float64[],system = PetroSystem[])
+    for sdf in subwdfs
+        x, y, sys = subdf_to_petrosys(sdf, components, xvar,yvar,phasefunc=phasefunc)
+        push!(newdf,[x y sys])
+    end
+
+    return newdf
+end
+
+function subdf_to_petrosys(sdf,components, xvar, yvar; phasefunc = [])
 
 
+    dfrows = eachrow(sdf)
+    sys = process_petroitem(dfrows[1],components)
+    
+    for i in 2:lastindex(dfrows)
+        phase = process_petroitem(dfrows[i],components)
+        for f in phasefunc
+            phase = f(phase)
+        end
+        push!(sys.phases,phase)
+    end
+
+    x = dfrows[1][xvar]
+    y = dfrows[1][yvar]
+
+    return x, y, sys
+end
+
+function process_petroitem(dfrow,components)
+
+    
+    H = dfrow["H,J/mol"]
+    ρ = dfrow["rho,kg/m3"]
+    G = dfrow["G,J/mol"]
+    Cp = dfrow["cp,J/K/mol"]
+    α = dfrow["alpha,1/K"]
+    β = dfrow["beta,1/bar"]
+    S = dfrow["S,J/K/mol"]
+    Cp_Cv = dfrow["cp/cv"]
+
+    mol = dfrow["n,mol"]
+    molarmass = dfrow["N,g"]
+    mass = mol*molarmass
+    Vmol = dfrow["V,J/bar/mol"]
+    vol = Vmol*mol
+    
+    if dfrow["Name"] == "system"
+        mass = molarmass
+        molarmass = mass/mol
+        vol = Vmol
+        Vmol = vol/mol
+    end
+
+    newcomponents = Component[]
+
+    for cmpnt in components
+        cmpnt_mol = dfrow[cmpnt.name*",mol,pfu"]
+        cmpnt_μ = dfrow["mu["*cmpnt.name*"],J/mol"]
+        push!(newcomponents,Component(cmpnt,mol = cmpnt_mol,μ = cmpnt_μ))
+    end
+
+    if dfrow["Name"] == "system"
+        return PetroSystem(composition = newcomponents,
+                    mol = mol,
+                    vol = vol,
+                    mass = mass,
+                    ρ = ρ,
+                    molarmass = molarmass,
+                    G = G,
+                    H = H,
+                    S = S,
+                    Cp = Cp,
+                    Vmol = Vmol,
+                    Cp_Cv = Cp_Cv,
+                    α = α
+                    )
+    else
+        return Phase(name = dfrow["Name"],
+                    composition = newcomponents,
+                    mol = mol,
+                    vol = vol,
+                    mass = mass,
+                    ρ = ρ,
+                    molarmass = molarmass,
+                    G = G,
+                    H = H,
+                    S = S,
+                    Cp = Cp,
+                    Vmol = Vmol,
+                    Cp_Cv = Cp_Cv,
+                    α = α
+                    )
+    end
+end
 #Generic functions for plotting extensions
 
 function pseudosection end
